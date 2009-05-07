@@ -2,16 +2,21 @@ History
 =======
 
 
+v0.5.1, 2009-05-08
+----------------
+
+* Expanded documentation.
+
 v0.5, 2009-05-07
 ----------------
 
-* Shift to setuptools distribution with script installation.
+* Shift to setuptools distribution with script installation.  
 
 
 v0.3, 2009-03-25
 ----------------
 
-* RK takes over. Sectioning introduced.
+* RK takes over. Sections and subsections are supported. Images default to being centered and having a height of 0.7\textheight.
 
 
 v0.2.1, 2008-08-30

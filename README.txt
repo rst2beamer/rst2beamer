@@ -62,6 +62,37 @@ In practice, this can be used  with ``pdflatex`` (to convert the LaTeX output to
 Limitations
 -----------
 
+Sections and subsections are supported, but frametitles must be in the lowest section level.  A section with no child sections is the lowest. Note that if
+you are going to use subsections anywhere in the document but your first slide isn't in a subsection, you have to use dummy a section before your first slide::
+
+	Introduction
+	------------
+
+	dummy
+	~~~~~
+
+	Slide 1
+	========
+
+	- Point 1
+	- Point 2
+
+	 visit_bullet_list defaults to using
+	\begin{itemize}[<+-| alert@+>]
+
+	so that beamer steps through the list nicely with overlays and alerts (you can turn this off with a commandline switch)
+
+	#2: 
+
+Images default to being centered and having a height of 0.7\textheight (you can turn off the centering with a commandline switch). Thus::
+
+	Slide Title
+	===========
+
+	.. image :: image_name.png
+	
+produces a graph centered in the middle of the slide. Simple.
+
 The top level title is set as the presentation title while 2nd-level titles are set as slide titles (``frametitles`` in Beamer terms). While all other titles are converted as normal, Beamer ignores them. There is some problem in the production of literals. rst2latex converts them to ragged-right, noindent typewriter font in a quote. Under beamer however, this makes them appear as italics. This was solved by overriding literal production with a simpler enviroment, albeit one that occasionally produces buggy output. Options to hyperref are dropped, due to this already being used in beamer.
 
 If the content for an individual slide is too large, it will simply overflow the edges of the slide and disappear.
