@@ -1,0 +1,28 @@
+History
+=======
+
+
+v0.5, 2009-05-07
+----------------
+
+* Shift to setuptools distribution with script installation.
+
+
+v0.3, 2009-03-25
+----------------
+
+* RK takes over. Sectioning introduced.
+
+
+v0.2.1, 2008-08-30
+------------------
+
+* Date approximate. Earlier versions of rst2beamer did not work with docutils 0.4, seemingly due to changes in the LaTeX writer. 
+
+
+v0.2.0, 2007-08-30
+------------------
+
+* Date approximate. Initial release.
+
+
