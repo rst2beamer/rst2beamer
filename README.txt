@@ -77,13 +77,6 @@ you are going to use subsections anywhere in the document but your first slide i
 	- Point 1
 	- Point 2
 
-	 visit_bullet_list defaults to using
-	\begin{itemize}[<+-| alert@+>]
-
-	so that beamer steps through the list nicely with overlays and alerts (you can turn this off with a commandline switch)
-
-	#2: 
-
 Images default to being centered and having a height of 0.7\textheight (you can turn off the centering with a commandline switch). Thus::
 
 	Slide Title
