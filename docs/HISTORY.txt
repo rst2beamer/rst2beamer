@@ -1,11 +1,17 @@
 History
 =======
 
+v0.5.2, 2009-07-16
+------------------
+
+* Fixed manifest so source included (facepalm)
+
 
 v0.5.1, 2009-05-08
-----------------
+------------------
 
 * Expanded documentation.
+
 
 v0.5, 2009-05-07
 ----------------

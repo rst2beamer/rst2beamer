@@ -1,2 +1,3 @@
-include LICENSE.txt
 recursive-include docs *
+include rst2beamer.py
+
