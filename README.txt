@@ -120,7 +120,8 @@ Beamer is a LaTeX document class for preparing PDF-based presentations. This scr
 Thanks
 ------
 
-Thanks to Dale Hathaway for helping track down the docutils 0.4 bug.
+Thanks to Dale Hathaway for helping track down the docutils 0.4 bug. Thanks to
+James Haggerty for detecting packaging problems.
 
 
 References
