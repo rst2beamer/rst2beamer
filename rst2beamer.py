@@ -204,7 +204,7 @@ class BeamerTranslator (LaTeXTranslator):
                     temp = self.section_level + 1
                     if temp > self.frame_level:
                         self.frame_level = temp
-                        print('self.frame_level=%s' % self.frame_level)
+                        #print('self.frame_level=%s' % self.frame_level)
                 else:
                     self.body.append (self.begin_frametag())
                 LaTeXTranslator.visit_section (self, node)
