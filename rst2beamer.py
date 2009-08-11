@@ -162,15 +162,15 @@ class BeamerTranslator (LaTeXTranslator):
                 self.head_prefix = [x for x in self.head_prefix if ('{typearea}' not in x)]
                 hyperref_posn = [i for i in range (len (self.head_prefix)) if ('{hyperref}' in self.head_prefix[i])]
                 self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
-##                 self.head_prefix.extend ([
-##                         '\\definecolor{rrblitbackground}{rgb}{0.55, 0.3, 0.1}\n',
-##                         '\\newenvironment{rtbliteral}{\n',
-##                         '\\begin{ttfamily}\n',
-##                         '\\color{rrblitbackground}\n',
-##                         '}{\n',
-##                         '\\end{ttfamily}\n',
-##                         '}\n',
-##                 ])
+                self.head_prefix.extend ([
+                        '\\definecolor{rrblitbackground}{rgb}{0.55, 0.3, 0.1}\n',
+                        '\\newenvironment{rtbliteral}{\n',
+                        '\\begin{ttfamily}\n',
+                        '\\color{rrblitbackground}\n',
+                        '}{\n',
+                        '\\end{ttfamily}\n',
+                        '}\n',
+                ])
                 theme = document.settings.theme
                 if theme:
                     self.head_prefix.append('\\usetheme{%s}\n' % theme)
