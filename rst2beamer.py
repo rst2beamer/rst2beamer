@@ -226,7 +226,8 @@ class BeamerTranslator (LaTeXTranslator):
                 if node.astext() == 'dummy':
                     raise nodes.SkipNode
                 if (self.section_level == self.frame_level+1):#1
-                        self.body.append ('\\frametitle{%s}\n\n' % self.encode(node.astext()))
+                        self.body.append ('\\frametitle{%s}\n\n' % \
+                                          self.encode(node.astext()))
                         raise nodes.SkipNode
                 else:
                         LaTeXTranslator.visit_title (self, node)
@@ -367,6 +368,13 @@ class BeamerTranslator (LaTeXTranslator):
             return ''.join(self.head_prefix + [head] + self.head + [pdfinfo]
                             + self.body_prefix  + self.body + self.body_suffix)
 
+
+        def visit_docinfo(self, node):
+            pass
+    
+        def depart_docinfo(self, node):
+            pass
+    
 
 class BeamerWriter (Latex2eWriter):
         """
