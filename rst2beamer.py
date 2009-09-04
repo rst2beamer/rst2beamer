@@ -249,7 +249,6 @@ class ColumnSetDirective (Directive):
         unsized_cols = []
         for child in cset:
             child_width = getattr (child, 'width', None)
-            print "*", child_width
             if (child_width):
                 used_width += child_width
             else:
