@@ -32,7 +32,6 @@ __version__ = "0.6"
 
 ### IMPORTS ###
 
-
 try:
     locale.setlocale (locale.LC_ALL, '')
 except:
@@ -77,6 +76,20 @@ BEAMER_SPEC =   (
                 ['--documentoptions'],
                 {'default': '', }
             ),
+            (
+                "Print embedded notes along with the slides. Possible "
+                    "arguments include 'false' (don't show), 'only' (show "
+                    "only notes), 'left', 'right', 'top', 'bottom' (show in "
+                    "relation to the annotated slide).",
+                ['--shownotes'],
+                {
+                    'action':    "store",
+                    'type':      'choice',
+                    'dest':      'shownotes',
+                    'choices':   ('false', 'left', 'right', 'top', 'bottom', 'only'),
+                    'default':   'false',
+                }
+            ),
         ] + list (Latex2eWriter.settings_spec[2][2:])
     ),
 )
@@ -93,6 +106,13 @@ bool_strs = ['false','true','0','1']
 bool_vals = [False, True, False, True]
 bool_dict = dict (zip (bool_strs, bool_vals))
 
+SHOWNOTES_FALSE = 'false'
+SHOWNOTES_ONLY = 'only'
+SHOWNOTES_LEFT = 'left'
+SHOWNOTES_RIGHT = 'right'
+SHOWNOTES_TOP = 'top'
+SHOWNOTES_BOTTOM = 'bottom'
+	
 
 ### IMPLEMENTATION ###
 
@@ -104,7 +124,7 @@ def wrap_children_in_columns (par_node, children, width=None):
 
     In constructing columns for beamer using either 'simplecolumns' approach,
     we have to wrap the original elements in column nodes, giving them an
-    appropriate width. Note this mutates the passed in parent node.
+    appropriate width. Note that this mutates parent node.
     """
     ## Preconditions & preparation:
     # TODO: check for children and raise error if not?
@@ -167,6 +187,14 @@ class column (nodes.container):
     Named as per docutils standards.
     """
     # TODO: should really init width in a c'tor
+
+class notes (nodes.container):
+    """
+    Annotations for a beamer presentation.
+
+    Named as per docutils standards.
+    """
+    pass
 
 
 ### DIRECTIVES
@@ -308,6 +336,40 @@ class ColumnDirective (Directive):
 directives.register_directive ('r2b_column', ColumnDirective)
 
 
+class NotesDirective (Directive):
+    """
+    A directive to include notes within a beamer presentation.
+    
+    """
+    required_arguments = 0
+    optional_arguments = 1
+    final_argument_whitespace = True
+    has_content = True
+    option_spec = {'width': float}
+
+    def run (self):
+        ## Preconditions:
+        self.assert_has_content()
+        # get width
+        width = self.options.get ('width', None)
+        if (width is not None):
+            if (width <= 0.0) or (1.0 < width):
+                raise self.error ("columnset width '%f' must be between 0.0 and 1.0" % width)
+        ## Main:
+        # make columnset
+        text = '\n'.join (self.content)
+        col = column (text)
+        col.width = width
+        # parse content of column
+        self.state.nested_parse (self.content, self.content_offset, col)
+        # adjust widths
+        ## Postconditions & return:
+        return [col]
+
+
+directives.register_directive ('r2b_column', ColumnDirective)
+
+
 class beamer_section (Directive):
 
     required_arguments = 1
@@ -336,6 +398,7 @@ class beamer_section (Directive):
 
 
 directives.register_directive ('beamer_section', beamer_section)
+directives.register_directive ('r2b_section', beamer_section)
 
 
 ### WRITER
@@ -359,9 +422,33 @@ class BeamerTranslator (LaTeXTranslator):
                 '\\end{ttfamily}\n',
                 '}\n',
             ])
+
+            # set appropriate header options for theming
             theme = document.settings.theme
             if theme:
                 self.head_prefix.append('\\usetheme{%s}\n' % theme)
+
+            # set appropriate header options for note display
+            shownotes = document.settings.shownotes
+            if (shownotes == SHOWNOTES_FALSE):
+                option_str = 'hide notes'
+            elif (shownotes == SHOWNOTES_ONLY):
+                option_str = 'show only notes'
+            else:
+                if (shownotes == SHOWNOTES_LEFT):
+                    notes_posn = 'left'
+                elif (shownotes == SHOWNOTES_RIGHT):
+                    notes_posn = 'right'                 
+                elif (shownotes == SHOWNOTES_TOP):
+                    notes_posn = 'top'                 
+                elif (shownotes == SHOWNOTES_BOTTOM):
+                    notes_posn = 'bottom'
+                else:
+                    # TODO: better error handling
+                    assert False, "unrecognised option for shownotes '%s'" % shownotes      
+                option_str = 'show notes on second screen=%s' % notes_posn
+            self.head_prefix.append ('\\usepackage{pgfpages}')
+            self.head_prefix.append ('\\setbeameroption{%s}\n' % option_str)
 
             self.overlay_bullets = string_to_bool (document.settings.overlaybullets, False)
             #using a False default because
@@ -371,6 +458,7 @@ class BeamerTranslator (LaTeXTranslator):
             self.centerfigs = string_to_bool(document.settings.centerfigs, False)#same reasoning as above
             self.in_columnset = False
             self.in_column = False
+            self.in_note = False
             self.frame_level = 0
 
             # this fixes the hardcoded section titles in docutils 0.4
@@ -614,6 +702,15 @@ class BeamerTranslator (LaTeXTranslator):
             self.in_column = False
             self.body.append ('\n')
 
+        def visit_note (self, node):
+            assert not self.in_notes, "already in column"
+            self.in_note = True
+            self.body.append ('\\note{\n')
+
+        def depart_note (self, node):
+            self.in_note = False
+            self.body.append ('}\n')
+
         def visit_container (self, node):
             """
             Handle containers with 'special' names, ignore the rest.
@@ -623,12 +720,15 @@ class BeamerTranslator (LaTeXTranslator):
             # moment we'll allow both.
             if ('r2b-simplecolumns' in node['classes']) or ('r2b_simplecolumns' in node['classes']):
                self.visit_columnset (node)
-               wrap_children_in_columns (node, node.children)              
+               wrap_children_in_columns (node, node.children)
+            elif ('r2b-note' in node['classes']) or ('r2b_note' in node['classes']):
+               self.visit_notes (node)
 
         def depart_container (self, node):
             if ('r2b-simplecolumns' in node['classes'])  or ('r2b_simplecolumns' in node['classes']):
-               self.depart_columnset (node) 
-
+                self.depart_columnset (node) 
+            elif ('r2b-note' in node['classes']) or ('r2b_note' in node['classes']):
+                self.depart_notes (node)
 
 
 class BeamerWriter (Latex2eWriter):
