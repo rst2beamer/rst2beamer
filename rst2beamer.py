@@ -478,6 +478,33 @@ class BeamerTranslator (LaTeXTranslator):
 ##             else:
 ##                 return LaTeXTranslator.latex_image_length(self, width_str)
 
+        def visit_enumerated_list(self, node):
+            #LaTeXTranslator has a very complicated
+            #visit_enumerated_list that throws out much of what latex
+            #does to handle them for us.  I am going back to relying
+            #on latex.
+            if 'contents' in self.topic_classes:
+                if self.use_latex_toc:
+                    raise nodes.SkipNode
+                self.body.append( '\\begin{list}{}{}\n' )
+            else:
+                begin_str = '\\begin{enumerate}'
+                if self.overlay_bullets:
+                    begin_str += '[<+-| alert@+>]'
+                begin_str += '\n'
+                self.body.append(begin_str)
+                if node.has_key('start'):
+                    self.body.append('\\addtocounter{enumi}{%d}\n' \
+                                     % (node['start']-1))
+                
+
+
+        def depart_enumerated_list(self, node):
+            if 'contents' in self.topic_classes:
+                self.body.append( '\\end{list}\n' )
+            else:
+                self.body.append( '\\end{enumerate}\n' )
+
 
         def visit_image (self, node):
             if self.centerfigs:
