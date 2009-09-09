@@ -32,7 +32,11 @@ __version__ = "0.6"
 
 ### IMPORTS ###
 
-import locale
+
+try:
+    locale.setlocale (locale.LC_ALL, '')
+except:
+    pass
 
 from docutils.core import publish_cmdline, default_description
 from docutils.writers.latex2e import Writer as Latex2eWriter
@@ -40,8 +44,6 @@ from docutils.writers.latex2e import LaTeXTranslator, DocumentClass
 from docutils import nodes
 from docutils.nodes import fully_normalize_name as normalize_name
 from docutils.parsers.rst import directives, Directive
-
-import pdb
 
 
 ## CONSTANTS & DEFINES ###
@@ -144,11 +146,6 @@ def string_to_bool (stringin, default=True):
         return default
     else:
         return bool_dict[temp]
-
-try:
-    locale.setlocale (locale.LC_ALL, '')
-except:
-    pass
 
 
 ### NODES ###
