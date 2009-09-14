@@ -27,7 +27,7 @@ See <http:www.agapow.net/programming/python/rst2beamer> for more details.
 
 __docformat__ = 'restructuredtext en'
 __author__ = "Ryan Krauss <ryanwkrauss@gmail.com> & Paul-Michael Agapow <agapow@bbsrc.ac.uk>"
-__version__ = "0.6"
+__version__ = "0.6.1"
 
 
 ### IMPORTS ###
@@ -46,6 +46,24 @@ from docutils.parsers.rst import directives, Directive
 
 
 ## CONSTANTS & DEFINES ###
+
+SHOWNOTES_FALSE = 'false'
+SHOWNOTES_TRUE = 'true'
+SHOWNOTES_ONLY = 'only'
+SHOWNOTES_LEFT = 'left'
+SHOWNOTES_RIGHT = 'right'
+SHOWNOTES_TOP = 'top'
+SHOWNOTES_BOTTOM = 'bottom'
+
+SHOWNOTES_OPTIONS = [
+    SHOWNOTES_FALSE,
+    SHOWNOTES_TRUE,
+    SHOWNOTES_ONLY,
+    SHOWNOTES_LEFT,
+    SHOWNOTES_RIGHT,
+    SHOWNOTES_TOP,
+    SHOWNOTES_BOTTOM,
+]
 
 BEAMER_SPEC =   (
     'Beamer options',
@@ -86,8 +104,8 @@ BEAMER_SPEC =   (
                     'action':    "store",
                     'type':      'choice',
                     'dest':      'shownotes',
-                    'choices':   ('false', 'left', 'right', 'top', 'bottom', 'only'),
-                    'default':   'false',
+                    'choices':   SHOWNOTES_OPTIONS,
+                    'default':   SHOWNOTES_FALSE,
                 }
             ),
         ] + list (Latex2eWriter.settings_spec[2][2:])
@@ -105,22 +123,50 @@ BEAMER_DEFAULTS = {
 bool_strs = ['false','true','0','1']
 bool_vals = [False, True, False, True]
 bool_dict = dict (zip (bool_strs, bool_vals))
-
-SHOWNOTES_FALSE = 'false'
-SHOWNOTES_ONLY = 'only'
-SHOWNOTES_LEFT = 'left'
-SHOWNOTES_RIGHT = 'right'
-SHOWNOTES_TOP = 'top'
-SHOWNOTES_BOTTOM = 'bottom'
-	
+    
 
 ### IMPLEMENTATION ###
 
 ### UTILS
 
+def node_has_class (node, classes):
+    """
+    Does the ndoe have one of these classes?
+    
+    :Parameters:
+        node
+            A docutils node
+        class
+            A class name or list of class names.
+            
+    :Returns:
+        A boolean indicating membership.
+            
+    A convenience function, 
+    """
+    ## Preconditions & preparation:
+    # wrap single name in list
+    if (not (issubclass (type (classes), list))):
+        classes = [classes]
+    ## Main:
+    for cname in classes:
+        if cname in node['classes']:
+            return True
+    return False
+
+
 def wrap_children_in_columns (par_node, children, width=None):
     """
     Replace this node's children with columns containing the passed children.
+    
+    :Parameters:
+        par_node
+            The node whose children are to be replaced.
+        children
+            The new child nodes, to be wrapped in columns and added to the
+            parent.
+        width
+            The width to be assigned to the columns.
 
     In constructing columns for beamer using either 'simplecolumns' approach,
     we have to wrap the original elements in column nodes, giving them an
@@ -188,11 +234,12 @@ class column (nodes.container):
     """
     # TODO: should really init width in a c'tor
 
-class notes (nodes.container):
+class beamer_note (nodes.container):
     """
     Annotations for a beamer presentation.
 
-    Named as per docutils standards.
+    Named as per docutils standards and to distinguish it from core docutils
+    node type.
     """
     pass
 
@@ -336,38 +383,32 @@ class ColumnDirective (Directive):
 directives.register_directive ('r2b_column', ColumnDirective)
 
 
-class NotesDirective (Directive):
+class NoteDirective (Directive):
     """
     A directive to include notes within a beamer presentation.
     
     """
     required_arguments = 0
-    optional_arguments = 1
+    optional_arguments = 0
     final_argument_whitespace = True
     has_content = True
-    option_spec = {'width': float}
+    option_spec = {}
 
     def run (self):
         ## Preconditions:
         self.assert_has_content()
-        # get width
-        width = self.options.get ('width', None)
-        if (width is not None):
-            if (width <= 0.0) or (1.0 < width):
-                raise self.error ("columnset width '%f' must be between 0.0 and 1.0" % width)
         ## Main:
+        ## Preconditions:
         # make columnset
         text = '\n'.join (self.content)
-        col = column (text)
-        col.width = width
-        # parse content of column
-        self.state.nested_parse (self.content, self.content_offset, col)
-        # adjust widths
+        note_node = beamer_note (text)
+        # parse content of note
+        self.state.nested_parse (self.content, self.content_offset, note_node)
         ## Postconditions & return:
-        return [col]
+        return [note_node]
 
 
-directives.register_directive ('r2b_column', ColumnDirective)
+directives.register_directive ('r2b_note', NoteDirective)
 
 
 class beamer_section (Directive):
@@ -404,161 +445,164 @@ directives.register_directive ('r2b_section', beamer_section)
 ### WRITER
 
 class BeamerTranslator (LaTeXTranslator):
-        """
-        A converter for docutils elements to beamer-flavoured latex.
-        """
+    """
+    A converter for docutils elements to beamer-flavoured latex.
+    """
 
-        def __init__ (self, document):
-            LaTeXTranslator.__init__ (self, document)
-            self.head_prefix = [x for x in self.head_prefix if ('{typearea}' not in x)]
-            hyperref_posn = [i for i in range (len (self.head_prefix)) if ('{hyperref}' in self.head_prefix[i])]
-            self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
-            self.head_prefix.extend ([
-                '\\definecolor{rrblitbackground}{rgb}{0.55, 0.3, 0.1}\n',
-                '\\newenvironment{rtbliteral}{\n',
-                '\\begin{ttfamily}\n',
-                '\\color{rrblitbackground}\n',
-                '}{\n',
-                '\\end{ttfamily}\n',
-                '}\n',
-            ])
+    def __init__ (self, document):
+        LaTeXTranslator.__init__ (self, document)
+        self.head_prefix = [x for x in self.head_prefix if ('{typearea}' not in x)]
+        hyperref_posn = [i for i in range (len (self.head_prefix)) if ('{hyperref}' in self.head_prefix[i])]
+        self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
+        self.head_prefix.extend ([
+            '\\definecolor{rrblitbackground}{rgb}{0.55, 0.3, 0.1}\n',
+            '\\newenvironment{rtbliteral}{\n',
+            '\\begin{ttfamily}\n',
+            '\\color{rrblitbackground}\n',
+            '}{\n',
+            '\\end{ttfamily}\n',
+            '}\n',
+        ])
 
-            # set appropriate header options for theming
-            theme = document.settings.theme
-            if theme:
-                self.head_prefix.append('\\usetheme{%s}\n' % theme)
+        # set appropriate header options for theming
+        theme = document.settings.theme
+        if theme:
+            self.head_prefix.append('\\usetheme{%s}\n' % theme)
 
-            # set appropriate header options for note display
-            shownotes = document.settings.shownotes
-            if (shownotes == SHOWNOTES_FALSE):
-                option_str = 'hide notes'
-            elif (shownotes == SHOWNOTES_ONLY):
-                option_str = 'show only notes'
+        # set appropriate header options for note display
+        shownotes = document.settings.shownotes
+        use_pgfpages = True
+        if (shownotes == SHOWNOTES_FALSE):
+            option_str = 'hide notes'
+            use_pgfpages = False
+        elif (shownotes == SHOWNOTES_ONLY):
+            option_str = 'show only notes'
+        else:
+            if (shownotes == SHOWNOTES_LEFT):
+                notes_posn = 'left'
+            elif (shownotes in [SHOWNOTES_RIGHT, SHOWNOTES_TRUE]):
+                notes_posn = 'right'                 
+            elif (shownotes == SHOWNOTES_TOP):
+                notes_posn = 'top'                 
+            elif (shownotes == SHOWNOTES_BOTTOM):
+                notes_posn = 'bottom'
             else:
-                if (shownotes == SHOWNOTES_LEFT):
-                    notes_posn = 'left'
-                elif (shownotes == SHOWNOTES_RIGHT):
-                    notes_posn = 'right'                 
-                elif (shownotes == SHOWNOTES_TOP):
-                    notes_posn = 'top'                 
-                elif (shownotes == SHOWNOTES_BOTTOM):
-                    notes_posn = 'bottom'
-                else:
-                    # TODO: better error handling
-                    assert False, "unrecognised option for shownotes '%s'" % shownotes      
-                option_str = 'show notes on second screen=%s' % notes_posn
-            self.head_prefix.append ('\\usepackage{pgfpages}')
-            self.head_prefix.append ('\\setbeameroption{%s}\n' % option_str)
+                # TODO: better error handling
+                assert False, "unrecognised option for shownotes '%s'" % shownotes      
+            option_str = 'show notes on second screen=%s' % notes_posn
+        if use_pgfpages:
+            self.head_prefix.append ('\\usepackage{pgfpages}\n')
+        self.head_prefix.append ('\\setbeameroption{%s}\n' % option_str)
 
-            self.overlay_bullets = string_to_bool (document.settings.overlaybullets, False)
-            #using a False default because
-            #True is the actual default.  If you are trying to pass in a value
-            #and I can't determine what you really meant, I am assuming you
-            #want something other than the actual default.
-            self.centerfigs = string_to_bool(document.settings.centerfigs, False)#same reasoning as above
-            self.in_columnset = False
-            self.in_column = False
-            self.in_note = False
-            self.frame_level = 0
+        self.overlay_bullets = string_to_bool (document.settings.overlaybullets, False)
+        #using a False default because
+        #True is the actual default.  If you are trying to pass in a value
+        #and I can't determine what you really meant, I am assuming you
+        #want something other than the actual default.
+        self.centerfigs = string_to_bool(document.settings.centerfigs, False)#same reasoning as above
+        self.in_columnset = False
+        self.in_column = False
+        self.in_note = False
+        self.frame_level = 0
 
-            # this fixes the hardcoded section titles in docutils 0.4
-            self.d_class = DocumentClass ('article')
+        # this fixes the hardcoded section titles in docutils 0.4
+        self.d_class = DocumentClass ('article')
 
-        def visit_Text(self, node):
-            self.body.append(self.encode(node.astext()))
+    def visit_Text (self, node):
+        self.body.append(self.encode(node.astext()))
 
-        def depart_Text(self, node):
-            pass
+    def depart_Text(self, node):
+        pass
 
-        def begin_frametag (self):
-            return '\n\\begin{frame}\n'
+    def begin_frametag (self):
+        return '\n\\begin{frame}\n'
 
-        def end_frametag (self):
-            return '\\end{frame}\n'
+    def end_frametag (self):
+        return '\\end{frame}\n'
 
-        def visit_section (self, node):
-            if has_sub_sections(node):
-                temp = self.section_level + 1
-                if temp > self.frame_level:
-                    self.frame_level = temp
-                    #print('self.frame_level=%s' % self.frame_level)
-            else:
-                self.body.append (self.begin_frametag())
-            LaTeXTranslator.visit_section (self, node)
-                
+    def visit_section (self, node):
+        if has_sub_sections(node):
+            temp = self.section_level + 1
+            if temp > self.frame_level:
+                self.frame_level = temp
+                #print('self.frame_level=%s' % self.frame_level)
+        else:
+            self.body.append (self.begin_frametag())
+        LaTeXTranslator.visit_section (self, node)
+            
 
-        def bookmark(self, node):
-            """I think beamer alread handles bookmarks well, so I
-            don't want duplicates."""
-            pass
+    def bookmark (self, node):
+        """I think beamer alread handles bookmarks well, so I
+        don't want duplicates."""
+        pass
 
-        def depart_section (self, node):
-            # Remove counter for potential subsections:
-            LaTeXTranslator.depart_section (self, node)
-            if (self.section_level == self.frame_level):#0
-                self.body.append (self.end_frametag())
-                        
+    def depart_section (self, node):
+        # Remove counter for potential subsections:
+        LaTeXTranslator.depart_section (self, node)
+        if (self.section_level == self.frame_level):#0
+            self.body.append (self.end_frametag())
+                    
 
-        def visit_title (self, node):
-            if node.astext() == 'dummy':
+    def visit_title (self, node):
+        if node.astext() == 'dummy':
+            raise nodes.SkipNode
+        if (self.section_level == self.frame_level+1):#1
+                self.body.append ('\\frametitle{%s}\n\n' % \
+                                  self.encode(node.astext()))
                 raise nodes.SkipNode
-            if (self.section_level == self.frame_level+1):#1
-                    self.body.append ('\\frametitle{%s}\n\n' % \
-                                      self.encode(node.astext()))
-                    raise nodes.SkipNode
-            else:
-                    LaTeXTranslator.visit_title (self, node)
+        else:
+                LaTeXTranslator.visit_title (self, node)
 
-        def depart_title (self, node):
-            if (self.section_level != self.frame_level+1):#1
-                    LaTeXTranslator.depart_title (self, node)
+    def depart_title (self, node):
+        if (self.section_level != self.frame_level+1):#1
+                LaTeXTranslator.depart_title (self, node)
 
 
-        def visit_literal_block(self, node):
-            if not self.active_table.is_open():
-                     self.body.append('\n\n\\smallskip\n\\begin{rtbliteral}\n')
-                     self.context.append('\\end{rtbliteral}\n\\smallskip\n\n')
-            else:
-                     self.body.append('\n')
-                     self.context.append('\n')
-            if (self.settings.use_verbatim_when_possible and (len(node) == 1)
-                            # in case of a parsed-literal containing just a "**bold**" word:
-                            and isinstance(node[0], nodes.Text)):
-                     self.verbatim = 1
-                     self.body.append('\\begin{verbatim}\n')
-            else:
-                     self.literal_block = 1
-                     self.insert_none_breaking_blanks = 1
+    def visit_literal_block (self, node):
+        if not self.active_table.is_open():
+                 self.body.append('\n\n\\smallskip\n\\begin{rtbliteral}\n')
+                 self.context.append('\\end{rtbliteral}\n\\smallskip\n\n')
+        else:
+                 self.body.append('\n')
+                 self.context.append('\n')
+        if (self.settings.use_verbatim_when_possible and (len(node) == 1)
+                        # in case of a parsed-literal containing just a "**bold**" word:
+                        and isinstance(node[0], nodes.Text)):
+                 self.verbatim = 1
+                 self.body.append('\\begin{verbatim}\n')
+        else:
+                 self.literal_block = 1
+                 self.insert_none_breaking_blanks = 1
 
-        def depart_literal_block(self, node):
-            if self.verbatim:
-                    self.body.append('\n\\end{verbatim}\n')
-                    self.verbatim = 0
-            else:
-                    self.body.append('\n')
-                    self.insert_none_breaking_blanks = 0
-                    self.literal_block = 0
-            self.body.append(self.context.pop())
-
-
-        def visit_bullet_list (self, node):
-            if 'contents' in self.topic_classes:
-                if self.use_latex_toc:
-                    raise nodes.SkipNode
-                self.body.append( '\\begin{list}{}{}\n' )
-            else:
-                begin_str = '\\begin{itemize}'
-                if self.overlay_bullets:
-                    begin_str += '[<+-| alert@+>]'
-                begin_str += '\n'
-                self.body.append (begin_str) 
+    def depart_literal_block (self, node):
+        if self.verbatim:
+                self.body.append('\n\\end{verbatim}\n')
+                self.verbatim = 0
+        else:
+                self.body.append('\n')
+                self.insert_none_breaking_blanks = 0
+                self.literal_block = 0
+        self.body.append(self.context.pop())
 
 
-        def depart_bullet_list (self, node):
-            if 'contents' in self.topic_classes:
-                self.body.append( '\\end{list}\n' )
-            else:
-                self.body.append( '\\end{itemize}\n' )
+    def visit_bullet_list (self, node):
+        if 'contents' in self.topic_classes:
+            if self.use_latex_toc:
+                raise nodes.SkipNode
+            self.body.append( '\\begin{list}{}{}\n' )
+        else:
+            begin_str = '\\begin{itemize}'
+            if self.overlay_bullets:
+                begin_str += '[<+-| alert@+>]'
+            begin_str += '\n'
+            self.body.append (begin_str) 
+
+
+    def depart_bullet_list (self, node):
+        if 'contents' in self.topic_classes:
+            self.body.append( '\\end{list}\n' )
+        else:
+            self.body.append( '\\end{itemize}\n' )
 
 ##         def latex_image_length(self, width_str):
 ##             if ('\\textheight' in width_str) or ('\\textwidth' in width_str):
@@ -566,169 +610,175 @@ class BeamerTranslator (LaTeXTranslator):
 ##             else:
 ##                 return LaTeXTranslator.latex_image_length(self, width_str)
 
-        def visit_enumerated_list(self, node):
-            #LaTeXTranslator has a very complicated
-            #visit_enumerated_list that throws out much of what latex
-            #does to handle them for us.  I am going back to relying
-            #on latex.
-            if 'contents' in self.topic_classes:
-                if self.use_latex_toc:
-                    raise nodes.SkipNode
-                self.body.append( '\\begin{list}{}{}\n' )
-            else:
-                begin_str = '\\begin{enumerate}'
-                if self.overlay_bullets:
-                    begin_str += '[<+-| alert@+>]'
-                begin_str += '\n'
-                self.body.append(begin_str)
-                if node.has_key('start'):
-                    self.body.append('\\addtocounter{enumi}{%d}\n' \
-                                     % (node['start']-1))
-                
+    def visit_enumerated_list (self, node):
+        #LaTeXTranslator has a very complicated
+        #visit_enumerated_list that throws out much of what latex
+        #does to handle them for us.  I am going back to relying
+        #on latex.
+        if 'contents' in self.topic_classes:
+            if self.use_latex_toc:
+                raise nodes.SkipNode
+            self.body.append( '\\begin{list}{}{}\n' )
+        else:
+            begin_str = '\\begin{enumerate}'
+            if self.overlay_bullets:
+                begin_str += '[<+-| alert@+>]'
+            begin_str += '\n'
+            self.body.append(begin_str)
+            if node.has_key('start'):
+                self.body.append('\\addtocounter{enumi}{%d}\n' \
+                                 % (node['start']-1))
+            
 
 
-        def depart_enumerated_list(self, node):
-            if 'contents' in self.topic_classes:
-                self.body.append( '\\end{list}\n' )
-            else:
-                self.body.append( '\\end{enumerate}\n' )
+    def depart_enumerated_list (self, node):
+        if 'contents' in self.topic_classes:
+            self.body.append( '\\end{list}\n' )
+        else:
+            self.body.append( '\\end{enumerate}\n' )
 
 
-        def visit_image (self, node):
-            if self.centerfigs:
-                self.body.append('\\begin{center}\n')
-            attrs = node.attributes
-            # Add image URI to dependency list, assuming that it's
-            # referring to a local file.
-            self.settings.record_dependencies.add(attrs['uri'])
-            pre = []                        # in reverse order
-            post = []
-            include_graphics_options = []
-            inline = isinstance(node.parent, nodes.TextElement)
-            if 'scale' in attrs:
-                # Could also be done with ``scale`` option to
-                # ``\includegraphics``; doing it this way for consistency.
-                pre.append('\\scalebox{%f}{' % (attrs['scale'] / 100.0,))
-                post.append('}')
-            if 'width' in attrs:
-                include_graphics_options.append('width=%s' % (
-                                self.latex_image_length(attrs['width']), ))
-            if 'height' in attrs:
-                include_graphics_options.append('height=%s' % (
-                                self.latex_image_length(attrs['height']), ))
-            if ('height' not in attrs) and ('width' not in attrs):
-                include_graphics_options.append('height=0.75\\textheight')
+    def visit_image (self, node):
+        if self.centerfigs:
+            self.body.append('\\begin{center}\n')
+        attrs = node.attributes
+        # Add image URI to dependency list, assuming that it's
+        # referring to a local file.
+        self.settings.record_dependencies.add(attrs['uri'])
+        pre = []                        # in reverse order
+        post = []
+        include_graphics_options = []
+        inline = isinstance(node.parent, nodes.TextElement)
+        if 'scale' in attrs:
+            # Could also be done with ``scale`` option to
+            # ``\includegraphics``; doing it this way for consistency.
+            pre.append('\\scalebox{%f}{' % (attrs['scale'] / 100.0,))
+            post.append('}')
+        if 'width' in attrs:
+            include_graphics_options.append('width=%s' % (
+                            self.latex_image_length(attrs['width']), ))
+        if 'height' in attrs:
+            include_graphics_options.append('height=%s' % (
+                            self.latex_image_length(attrs['height']), ))
+        if ('height' not in attrs) and ('width' not in attrs):
+            include_graphics_options.append('height=0.75\\textheight')
 
-            if 'align' in attrs:
-                align_prepost = {
-                    # By default latex aligns the bottom of an image.
-                    (1, 'bottom'): ('', ''),
-                    (1, 'middle'): ('\\raisebox{-0.5\\height}{', '}'),
-                    (1, 'top'): ('\\raisebox{-\\height}{', '}'),
-                    (0, 'center'): ('{\\hfill', '\\hfill}'),
-                    # These 2 don't exactly do the right thing.  The image should
-                    # be floated alongside the paragraph.  See
-                    # http://www.w3.org/TR/html4/struct/objects.html#adef-align-IMG
-                    (0, 'left'): ('{', '\\hfill}'),
-                    (0, 'right'): ('{\\hfill', '}'),}
-                try:
-                    pre.append(align_prepost[inline, attrs['align']][0])
-                    post.append(align_prepost[inline, attrs['align']][1])
-                except KeyError:
-                    pass                    # XXX complain here?
-            if not inline:
-                pre.append('\n')
-                post.append('\n')
-            pre.reverse()
-            self.body.extend( pre )
-            options = ''
-            if len(include_graphics_options)>0:
-                options = '[%s]' % (','.join(include_graphics_options))
-            self.body.append( '\\includegraphics%s{%s}' % (
-                                options, attrs['uri'] ) )
-            self.body.extend( post )
-
-
-        def depart_image (self, node):
-            if self.centerfigs:
-                self.body.append('\\end{center}\n')
+        if 'align' in attrs:
+            align_prepost = {
+                # By default latex aligns the bottom of an image.
+                (1, 'bottom'): ('', ''),
+                (1, 'middle'): ('\\raisebox{-0.5\\height}{', '}'),
+                (1, 'top'): ('\\raisebox{-\\height}{', '}'),
+                (0, 'center'): ('{\\hfill', '\\hfill}'),
+                # These 2 don't exactly do the right thing.  The image should
+                # be floated alongside the paragraph.  See
+                # http://www.w3.org/TR/html4/struct/objects.html#adef-align-IMG
+                (0, 'left'): ('{', '\\hfill}'),
+                (0, 'right'): ('{\\hfill', '}'),}
+            try:
+                pre.append(align_prepost[inline, attrs['align']][0])
+                post.append(align_prepost[inline, attrs['align']][1])
+            except KeyError:
+                pass                    # XXX complain here?
+        if not inline:
+            pre.append('\n')
+            post.append('\n')
+        pre.reverse()
+        self.body.extend( pre )
+        options = ''
+        if len(include_graphics_options)>0:
+            options = '[%s]' % (','.join(include_graphics_options))
+        self.body.append( '\\includegraphics%s{%s}' % (
+                            options, attrs['uri'] ) )
+        self.body.extend( post )
 
 
-        def astext (self):
-            if self.pdfinfo is not None and self.pdfauthor:
-                self.pdfinfo.append('pdfauthor={%s}' % self.pdfauthor)
-            if self.pdfinfo:
-                pdfinfo = '\\hypersetup{\n' + ',\n'.join(self.pdfinfo) + '\n}\n'
-            else:
-                pdfinfo = ''
-            head = '\\title{%s}\n' % self.title
-            if self.author_stack:
-                author_head = '\\author{%s}\n' % ' \\and\n'.join(['~\\\\\n'.join(author_lines)
-                                     for author_lines in self.author_stack])
-                head +=  author_head
-            if self.date:
-                date_head = '\\date{%s}\n' % self.date
-                head += date_head
-            return ''.join (self.head_prefix + [head] + self.head + [pdfinfo]
-                            + self.body_prefix  + self.body + self.body_suffix)
+    def depart_image (self, node):
+        if self.centerfigs:
+            self.body.append('\\end{center}\n')
 
 
-        def visit_docinfo (self, node):
-            """
-            Docinfo is ignored for Beamer documents.
-            """
-            pass
-    
-        def depart_docinfo (self, node):
-            # see visit_docinfo
-            pass
- 
-        def visit_columnset (self, node):
-            assert not self.in_columnset, "already in column set"
-            self.in_columnset = True
-            self.body.append ('\\begin{columns}[T]\n')
+    def astext (self):
+        if self.pdfinfo is not None and self.pdfauthor:
+            self.pdfinfo.append('pdfauthor={%s}' % self.pdfauthor)
+        if self.pdfinfo:
+            pdfinfo = '\\hypersetup{\n' + ',\n'.join(self.pdfinfo) + '\n}\n'
+        else:
+            pdfinfo = ''
+        head = '\\title{%s}\n' % self.title
+        if self.author_stack:
+            author_head = '\\author{%s}\n' % ' \\and\n'.join(['~\\\\\n'.join(author_lines)
+                                 for author_lines in self.author_stack])
+            head +=  author_head
+        if self.date:
+            date_head = '\\date{%s}\n' % self.date
+            head += date_head
+        return ''.join (self.head_prefix + [head] + self.head + [pdfinfo]
+                        + self.body_prefix  + self.body + self.body_suffix)
 
-        def depart_columnset (self, node):
-            assert self.in_columnset, "not in column set"
-            self.in_columnset = False
-            self.body.append ('\\end{columns}\n')
 
-        def visit_column (self, node):
-            assert not self.in_column, "already in column"
-            self.in_column = True
-            self.body.append ('\\column{%.2f\\textwidth}\n' % node.width)
+    def visit_docinfo (self, node):
+        """
+        Docinfo is ignored for Beamer documents.
+        """
+        pass
 
-        def depart_column (self, node):
-            self.in_column = False
-            self.body.append ('\n')
+    def depart_docinfo (self, node):
+        # see visit_docinfo
+        pass
 
-        def visit_note (self, node):
-            assert not self.in_notes, "already in column"
-            self.in_note = True
-            self.body.append ('\\note{\n')
+    def visit_columnset (self, node):
+        assert not self.in_columnset, "already in column set, which cannot be nested"
+        self.in_columnset = True
+        self.body.append ('\\begin{columns}[T]\n')
 
-        def depart_note (self, node):
-            self.in_note = False
-            self.body.append ('}\n')
+    def depart_columnset (self, node):
+        assert self.in_columnset, "not in column set"
+        self.in_columnset = False
+        self.body.append ('\\end{columns}\n')
 
-        def visit_container (self, node):
-            """
-            Handle containers with 'special' names, ignore the rest.
-            """
-            # NOTE: theres something wierd here where ReST seems to translate
-            # underscores in container identifiers into hyphens. So for the
-            # moment we'll allow both.
-            if ('r2b-simplecolumns' in node['classes']) or ('r2b_simplecolumns' in node['classes']):
-               self.visit_columnset (node)
-               wrap_children_in_columns (node, node.children)
-            elif ('r2b-note' in node['classes']) or ('r2b_note' in node['classes']):
-               self.visit_notes (node)
+    def visit_column (self, node):
+        assert not self.in_column, "already in column, which cannot be nested"
+        self.in_column = True
+        self.body.append ('\\column{%.2f\\textwidth}\n' % node.width)
 
-        def depart_container (self, node):
-            if ('r2b-simplecolumns' in node['classes'])  or ('r2b_simplecolumns' in node['classes']):
-                self.depart_columnset (node) 
-            elif ('r2b-note' in node['classes']) or ('r2b_note' in node['classes']):
-                self.depart_notes (node)
+    def depart_column (self, node):
+        self.in_column = False
+        self.body.append ('\n')
+
+    def visit_beamer_note (self, node):
+        assert not self.in_note, "already in note, which cannot be nested"
+        self.in_note = True
+        self.body.append ('\\note{\n')
+
+    def depart_beamer_note (self, node):
+        self.in_note = False
+        self.body.append ('}\n')
+
+    def visit_container (self, node):
+        """
+        Handle containers with 'special' names, ignore the rest.
+        """
+        # NOTE: theres something wierd here where ReST seems to translate
+        # underscores in container identifiers into hyphens. So for the
+        # moment we'll allow both.
+        if (node_has_class (node, ['r2b-simplecolumns', 'r2b_simplecolumns'])):
+           self.visit_columnset (node)
+           wrap_children_in_columns (node, node.children)
+        elif (node_has_class (node, ['r2b-note', 'r2b_note'])):
+           self.visit_beamer_note (node)
+        else:
+            # currently the LaTeXTranslator does nothing, but just in case
+            LaTeXTranslator.visit_container (self, node)
+
+    def depart_container (self, node):
+        if (node_has_class (node, ['r2b-simplecolumns', 'r2b_simplecolumns'])):
+            self.depart_columnset (node) 
+        elif (node_has_class (node, ['r2b-note', 'r2b_note'])):
+            self.depart_beamer_note (node)
+        else:
+            # currently the LaTeXTranslator does nothing, but just in case
+            LaTeXTranslator.depart_container (self, node)
 
 
 class BeamerWriter (Latex2eWriter):
@@ -742,10 +792,19 @@ class BeamerWriter (Latex2eWriter):
             Latex2eWriter.__init__(self)
             self.translator_class = BeamerTranslator
 
-### TEST & DEBUG ###
 
-def test_with_file (fpath):
-    publish_cmdline (writer=BeamerWriter(), argv=[fpath])
+### TEST & DEBUG ###
+# TODO: should really move to a test file or dir
+
+def test_with_file (fpath, args=[]):
+    """
+    Call rst2beamer on the given file with the given args.
+    
+    During development, it's handy to be able to easily call the writer from
+    within Python. This is a convenience function that wraps the docutils
+    functions to do so.
+    """
+    return publish_cmdline (writer=BeamerWriter(), argv=args+[fpath])
 
 
 ### MAIN ###
