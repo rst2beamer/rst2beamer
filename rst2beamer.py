@@ -89,6 +89,7 @@ BEAMER_SPEC =   (
                 {'default': True, }
             ),                        
             (
+                # TODO: this doesn't seem to do anything ...
                 'Specify document options. Multiple options can be given, '
                 'separated by commas.  Default is "10pt,a4paper".',
                 ['--documentoptions'],

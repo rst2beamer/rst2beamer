@@ -19,8 +19,10 @@ rst2beamer can be installed via setuptools / easy_install or manually. Consult t
 Usage
 =====
 
-*Depending on your platform, the scripts may be installed as ``.py`` scripts,
-or some form of executable, or both.*
+.. note::
+
+	Depending on your platform, the script may be installed as ``rst2beamer``,
+	or ``rst2beamer.py``.
 
 rst2beamer is called::
 

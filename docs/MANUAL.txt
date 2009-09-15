@@ -115,7 +115,18 @@ TO BE COMPLETED
 Themes
 ======
 
-TO BE COMPLETED
+Beamer can be displayed in a variety of themes, changing the sizing, color and layout of page elements. The theme can be controlled by the commandline option ``theme``. For example::
+
+	rst2beamer --theme=Rochester infile.rst
+
+will produce a Beamer file styled with the "Rochester" theme. Some other themes include "AnnArbor", "Bergen", "CambridgeUS" and "Warsaw".
+
+.. note::
+
+	The selection of themes available with your LaTeX installation may vary
+	but a typical selection can be seen here [#beamer_themes]_. The default
+	Beamer theme (called "default") is very plain and so rst2beamer uses the
+	"Warsaw" theme as its default.
 
 
 Sections
@@ -286,6 +297,10 @@ Any container with the name 'r2b_note' or 'r2b-note' will be handled like the no
 
 	   This will be understood by other ReST writers.
 
+.. note::
+
+	See the "notes" input and output example files.
+
 
 Limitations
 ===========
@@ -310,7 +325,7 @@ Development notes
 History & motivation
 ~~~~~~~~~~~~~~~~~~~~
 
-While preparing a course, one of us (PMA) became frustrated with the length of time it took to prepare a presentation, even simple slides with bullet-pointed text and lumps of code. Preparing handouts or downloadable versions was a further problem. Given that docutils already has good LaTeX output, PDF production via the Beamer document class was a logical choice. rst2beamer started as a semi-ugly hack of docutil's LaTeX machinery, making as few modifications are possible due to (a) laziness and (b) wanting to leverage as much of an existing robust code base as possible. It wasn't - and isn't - intended to be feature-complete: it worked with the ReST that I prepared and will probably give adequate output for most other simple ReST documents. It was subsequently taken up by the other of us (RK) who whipped the hacky script into shape and added several features to make the produced slides far more presentable. Unbeknownst to either of us, it seems to have been adopted by Pythonistas for use at conferences. 
+While preparing a course, one of us (PMA) became frustrated with the length of time it took to prepare a presentation for teaching, even simple slides with bullet-pointed text and lumps of code. Preparing handouts or downloadable versions was a further problem. Given that docutils already has good LaTeX output, PDF production via the Beamer document class was a logical choice. rst2beamer started as a semi-ugly hack of docutil's LaTeX machinery, making as few modifications are possible due to (a) laziness and (b) wanting to leverage as much of an existing robust code base as possible. It wasn't - and isn't - intended to be feature-complete: it worked with the ReST that I prepared and will probably give adequate output for most other simple ReST documents. It was subsequently taken up by the other of us (RK) who whipped the hacky script into shape and added several features to make the produced slides far more presentable. Unbeknownst to either of us, it seems to have been adopted by Pythonistas for use at conferences. 
 
 
 Alternatives
@@ -351,5 +366,9 @@ References
 .. [#rst] `Restructured text <http://docutils.sourceforge.net/rst.html>`__
 
 .. [#beamer] `Beamer homepage <http://latex-beamer.sourceforge.net/>`__
+
+.. [#beamer_themes] Patrick Pletscher `Beamer Themes <http://www.pletscher.org/writings/latex/beamerthemes.php>`__
+
+
 
 
