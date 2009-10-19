@@ -71,6 +71,8 @@ Limitations
 
 Earlier versions of rst2beamer did not work with docutils 0.4, seemingly due to changes in the LaTeX writer. While this has been fixed, most work has been done with docutils snapshots from version 0.5 and up. In balance, users are recommended to update docutils.
 
+More recently, changes in the LaTeX writer in docutils 0.6 broke rst2beamer again. 
+
 Not all features of beamer are supported, and some - that deal with with page layout or presentation - may never be. Introducing complex syntax to achieve complex and specific page effects defeats the point of ReST's simple and easy-to-write format. If you need a complex presentation, use Powerpoint or Keynote.
 
 If the content for an individual slide is too large, it will simply overflow the edges of the slide and disappear. Arguably, this is a sign you should put less on each slide.
@@ -79,7 +81,7 @@ If the content for an individual slide is too large, it will simply overflow the
 Credits
 =======
 
-rst2beamer is developed by `Ryan Krauss <ryanwkrauss@gmail.com>`__ and `Paul-Michael Agapow <agapow@bbsrc.ac.uk>`__. Thanks to Dale Hathaway for helping track down the docutils 0.4 bug. Thanks to James Haggerty for detecting and reporting packaging problems.
+rst2beamer is developed by `Ryan Krauss <ryanwkrauss@gmail.com>`__ and `Paul-Michael Agapow <agapow@bbsrc.ac.uk>`__. Thanks to those who reported and helped us track down bugs: Perttu Laurinen, Mike Pennington, James Haggerty and Dale Hathaway.
 
 
 References

@@ -9,9 +9,9 @@ be used to prepare slides. It can be called::
         rst2beamer.py infile.txt > outfile.tex
         
 where ``infile.txt`` contains the rst and ``outfile.tex`` contains the
-produced Beamer LaTeX.
+Beamer-flavoured LaTeX.
 
-See <http:www.agapow.net/programming/python/rst2beamer> for more details.
+See <http:www.agapow.net/software/rst2beamer> for more details.
 
 """
 # TODO: modifications for handout sections?
@@ -27,7 +27,7 @@ See <http:www.agapow.net/programming/python/rst2beamer> for more details.
 
 __docformat__ = 'restructuredtext en'
 __author__ = "Ryan Krauss <ryanwkrauss@gmail.com> & Paul-Michael Agapow <agapow@bbsrc.ac.uk>"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 
 ### IMPORTS ###
@@ -130,9 +130,30 @@ bool_dict = dict (zip (bool_strs, bool_vals))
 
 ### UTILS
 
+# Python 2.5 or 2.4
+def index (seq, f, fail=None):
+    """
+    Return the index of the first item in seq where f(item) is True.
+    
+    :Parameters:
+        seq
+            A sequence or iterable
+        f
+            A boolean function an element of `seq`, e.g. `lambda x: x==4`
+        fail
+            The value to return if no item is found in seq.
+            
+    While this could be written in a neater fashion in Python 2.6, this method
+    maintains compatiability with earlier version.
+    """
+    for index in (i for i in xrange (len (seq)) if f (seq[i])):
+        return index
+    return fail
+        
+
 def node_has_class (node, classes):
     """
-    Does the ndoe have one of these classes?
+    Does the node have one of these classes?
     
     :Parameters:
         node
@@ -452,9 +473,17 @@ class BeamerTranslator (LaTeXTranslator):
 
     def __init__ (self, document):
         LaTeXTranslator.__init__ (self, document)
-        self.head_prefix = [x for x in self.head_prefix if ('{typearea}' not in x)]
-        hyperref_posn = [i for i in range (len (self.head_prefix)) if ('{hyperref}' in self.head_prefix[i])]
-        self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
+        self.head_prefix = [x for x in self.head_prefix
+            if ('{typearea}' not in x)]
+        #hyperref_posn = [i for i in range (len (self.head_prefix))
+        #    if ('{hyperref}' in self.head_prefix[i])]
+        hyperref_posn = index (self.head_prefix,
+            lambda x: '{hyperref}\n' in x)
+        if (hyperref_posn is None):
+            self.head_prefix.extend ([
+                '\\usepackage{hyperref}\n'
+            ])
+        #self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
         self.head_prefix.extend ([
             '\\definecolor{rrblitbackground}{rgb}{0.55, 0.3, 0.1}\n',
             '\\newenvironment{rtbliteral}{\n',
@@ -587,7 +616,10 @@ class BeamerTranslator (LaTeXTranslator):
 
 
     def visit_bullet_list (self, node):
-        if 'contents' in self.topic_classes:
+        # NOTE: required by the loss of 'topic_classes' is docutils 0.6
+        # TODO: so what replaces it?
+        if (hasattr (self, 'topic_classes') and
+            ('contents' in self.topic_classes)):
             if self.use_latex_toc:
                 raise nodes.SkipNode
             self.body.append( '\\begin{list}{}{}\n' )
@@ -600,7 +632,9 @@ class BeamerTranslator (LaTeXTranslator):
 
 
     def depart_bullet_list (self, node):
-        if 'contents' in self.topic_classes:
+        # NOTE: see `visit_bullet_list`
+        if (hasattr (self, 'topic_classes') and
+            ('contents' in self.topic_classes)):
             self.body.append( '\\end{list}\n' )
         else:
             self.body.append( '\\end{itemize}\n' )

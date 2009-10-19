@@ -1,6 +1,14 @@
 History
 =======
 
+v0.6.2, 2009-10-20
+------------------
+
+* It seems there have been some changes in the docutils LaTeX2e writer, which the Beamer writer is based upon. Hopefully they've all been caught.
+
+* Corrected url in header of source, as well as some misspellings.
+
+
 v0.6.1, 2009-09-14
 ------------------
 
