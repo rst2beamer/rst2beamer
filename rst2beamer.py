@@ -27,7 +27,7 @@ See <http:www.agapow.net/software/rst2beamer> for more details.
 
 __docformat__ = 'restructuredtext en'
 __author__ = "Ryan Krauss <ryanwkrauss@gmail.com> & Paul-Michael Agapow <agapow@bbsrc.ac.uk>"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 
 ### IMPORTS ###
