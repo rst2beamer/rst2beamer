@@ -564,7 +564,7 @@ class BeamerTranslator (LaTeXTranslator):
     def bookmark (self, node):
         """I think beamer alread handles bookmarks well, so I
         don't want duplicates."""
-        pass
+        return ''
 
     def depart_section (self, node):
         # Remove counter for potential subsections:
