@@ -13,11 +13,27 @@ presentations.
 Installation
 ============
 
-rst2beamer can be installed via setuptools / easy_install or manually. Consult the enclosed manual for further details.
+rst2beamer can be installed via setuptools / easy_install or manually. Consult
+the enclosed manual for further details.
 
 
 Usage
 =====
+
+rst2beamer should interpret a reasonable subset of restructured text and
+produce reasonable LaTeX. Not all features of beamer have been implemented,
+just a (large) subset that allows the quick production of good looking slides.
+These include:
+
+* Overlay lists (i.e. list items that appear point-by-point)
+* Beamer themes
+* Automatic centering and resizing of figures
+* Embedded notes and the output of note slides.
+* Arranging slide contents into columns.
+
+Some examples can be found in the ``docs/examples`` directory of the
+distribution. In practice, rst2beamer can be used with ``pdflatex`` to get PDF
+versions of a presentation.
 
 .. note::
 
@@ -32,9 +48,12 @@ For example::
 
 	rst2beamer infile.txt outfile.tex
 
-where ``infile.txt`` contains the ReST and ``outfile.tex`` contains the produced Beamer LaTeX. 
+where ``infile.txt`` contains the ReST and ``outfile.tex`` contains the
+produced Beamer LaTeX.
 
-It supports the usual docutils and LaTeX writer (rst2latex) options, save the ``documentclass`` option (which is fixed to ``beamer``) and hyperref options (which are already set in beamer). It also supports:
+It supports the usual docutils and LaTeX writer (rst2latex) options, save the
+``documentclass`` option (which is fixed to ``beamer``) and hyperref options
+(which are already set in beamer). It also supports:
 
 --theme=THEME           Specify Beamer theme.
 --overlaybullets=OVERLAYBULLETS
@@ -54,42 +73,44 @@ It supports the usual docutils and LaTeX writer (rst2latex) options, save the ``
                         only notes), 'left', 'right', 'top', 'bottom' (show in
                         relation to the annotated slide).
 
-rst2beamer should interpret a reasonable subset of restructured text and produce reasonable LaTeX. Not all features of beamer have been implemented, just a (large) subset that allows the quick production of good looking slides.
-These include:
-
-* Overlay lists (i.e. those that appear point-by-point)
-* Beamer themes
-* Automatic centering and resizing of figures
-* Embedded notes and the output of note slides.
-* Arranging slide contents into columns.
-
-Some examples can be found in the ``docs/examples`` directory of the distribution. In practice, rst2beamer can be used  with ``pdflatex`` to get PDF versions of a presentation.
-
 
 Limitations
 ===========
 
-Earlier versions of rst2beamer did not work with docutils 0.4, seemingly due to changes in the LaTeX writer. While this has been fixed, most work has been done with docutils snapshots from version 0.5 and up. In balance, users are recommended to update docutils.
+Earlier versions of rst2beamer did not work with docutils 0.4, seemingly due
+to changes in the LaTeX writer. While this has been fixed, most work has been
+done with docutils snapshots from version 0.5 and up. In balance, users are
+recommended to update docutils.
 
-More recently, changes in the LaTeX writer in docutils 0.6 broke rst2beamer again. 
+More recently, changes in the LaTeX writer in docutils 0.6 broke rst2beamer
+again. We think all those bugs have been caught.
 
-Not all features of beamer are supported, and some - that deal with with page layout or presentation - may never be. Introducing complex syntax to achieve complex and specific page effects defeats the point of ReST's simple and easy-to-write format. If you need a complex presentation, use Powerpoint or Keynote.
+Not all features of beamer are supported, and some - that deal with with page
+layout or presentation - may never be. Introducing complex syntax to achieve
+complex and specific page effects defeats the point of ReST's simple and
+easy-to-write format. If you need a complex presentation, use Powerpoint or
+Keynote.
 
-If the content for an individual slide is too large, it will simply overflow the edges of the slide and disappear. Arguably, this is a sign you should put less on each slide.
+If the content for an individual slide is too large, it will simply overflow
+the edges of the slide and disappear. Arguably, this is a sign you should put
+less on each slide.
 
 
 Credits
 =======
 
-rst2beamer is developed by `Ryan Krauss <ryanwkrauss@gmail.com>`__ and `Paul-Michael Agapow <agapow@bbsrc.ac.uk>`__. Thanks to those who reported and helped us track down bugs: Perttu Laurinen, Mike Pennington, James Haggerty and Dale Hathaway.
+rst2beamer is developed by `Ryan Krauss <ryanwkrauss@gmail.com>`__ and
+`Paul-Michael Agapow <agapow@bbsrc.ac.uk>`__. Thanks to those who reported and
+helped us track down bugs: Perttu Laurinen, Mike Pennington, James Haggerty
+and Dale Hathaway.
 
 
 References
 ==========
 
-.. [#homepage] rst2beamer homepages at `agapow.net <http://www.agapow/net/software/rst2beamer>`__ and `cs.siue.edu <http://home.cs.siue.edu/rkrauss/python_website/>`__
-
-.. [#setuptools] `Installing setuptools <http://peak.telecommunity.com/DevCenter/setuptools#installing-setuptools>`__
+.. [#homepage] rst2beamer homepages at `agapow.net
+   <http://www.agapow/net/software/rst2beamer>`__ and `cs.siue.edu
+   <http://home.cs.siue.edu/rkrauss/python_website/>`__
 
 .. [#docutils] `Docutils homepage <http://docutils.sourceforge.net/>`__
 
