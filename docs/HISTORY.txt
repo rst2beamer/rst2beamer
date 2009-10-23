@@ -1,10 +1,20 @@
 History
 =======
 
+v0.6.4, 2009-10-22
+------------------
+
+* The parsed-literal environment was losing indentation, and perhaps has been
+  since docutils 0.4. It now works correctly. 
+  
+* Added "calling" information to examples.
+
+
 v0.6.2, 2009-10-20
 ------------------
 
-* It seems there have been some changes in the docutils LaTeX2e writer, which the Beamer writer is based upon. Hopefully they've all been caught.
+* It seems there have been some changes in the docutils LaTeX2e writer, which
+  the Beamer writer is based upon. Hopefully they've all been caught.
 
 * Corrected url in header of source, as well as some misspellings.
 

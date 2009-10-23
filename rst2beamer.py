@@ -27,7 +27,7 @@ See <http:www.agapow.net/software/rst2beamer> for more details.
 
 __docformat__ = 'restructuredtext en'
 __author__ = "Ryan Krauss <ryanwkrauss@gmail.com> & Paul-Michael Agapow <agapow@bbsrc.ac.uk>"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 
 ### IMPORTS ###
@@ -328,10 +328,11 @@ class ColumnSetDirective (Directive):
     def run (self):
         ## Preconditions:
         self.assert_has_content()
-        # get width
+        # get and check width of column set
         width = self.options.get ('width', 0.9)
-        if (width <= 0.0) or (1.0 < width):
-            raise self.error ("columnset width '%f' must be between 0.0 and 1.0" % width)
+        if ((width <= 0.0) or (1.0 < width)):
+            raise self.error ( \
+                "columnset width '%f' must be between 0.0 and 1.0" % width)
         ## Main:
         # make columnset
         text = '\n'.join (self.content)
@@ -347,13 +348,16 @@ class ColumnSetDirective (Directive):
                 used_width += child_width
             else:
                 unsized_cols.append (child)
+
         if (1.0 < used_width):
-           raise self.error ("cumulative column width '%f' exceeds 1.0" % used_width)
+           raise self.error ( \
+            "cumulative column width '%f' exceeds 1.0" % used_width)
         # set unsized widths
         if (unsized_cols):
             excess_width = width - used_width
             if (excess_width <= 0.0):
-               raise self.error ("no room for unsized columns '%f'" % excess_width)
+                raise self.error ( \
+                    "no room for unsized columns '%f'" % excess_width)
             col_width = excess_width / len (unsized_cols)
             for child in unsized_cols:
                 child.width = col_width
@@ -589,30 +593,44 @@ class BeamerTranslator (LaTeXTranslator):
 
 
     def visit_literal_block (self, node):
-        if not self.active_table.is_open():
-                 self.body.append('\n\n\\smallskip\n\\begin{rtbliteral}\n')
-                 self.context.append('\\end{rtbliteral}\n\\smallskip\n\n')
-        else:
-                 self.body.append('\n')
-                 self.context.append('\n')
-        if (self.settings.use_verbatim_when_possible and (len(node) == 1)
-                        # in case of a parsed-literal containing just a "**bold**" word:
-                        and isinstance(node[0], nodes.Text)):
-                 self.verbatim = 1
-                 self.body.append('\\begin{verbatim}\n')
-        else:
-                 self.literal_block = 1
-                 self.insert_none_breaking_blanks = 1
+        # FIX: the purpose of this method is unclear, but it causes parsed
+        # literals in docutils 0.6 to lose indenting. Thus we've solve the
+        # problem be just getting rid of it. [PMA 20091020]
+        
+       # working due to changes in docutils and Beamer setting the quote font to
+          #italic. It should
+          
+        self.body.append ( '\\setbeamerfont{quote}{parent={}}\n' )
+        
+        LaTeXTranslator.visit_literal_block (self, node)
+        #if not self.active_table.is_open():
+        #         self.body.append('\n\n\\smallskip\n\\begin{rtbliteral}\n')
+        #         self.context.append('\\end{rtbliteral}\n\\smallskip\n\n')
+        #else:
+        #         self.body.append('\n')
+        #         self.context.append('\n')
+        #if (self.settings.use_verbatim_when_possible and (len(node) == 1)
+        #    # in case of a parsed-literal containing just a "**bold**" word:
+        #                and isinstance(node[0], nodes.Text)):
+        #         self.verbatim = 1
+        #         self.body.append('\\begin{verbatim}\n')
+        #else:
+        #         self.literal_block = 1
+        #         self.insert_none_breaking_blanks = 1
 
     def depart_literal_block (self, node):
-        if self.verbatim:
-                self.body.append('\n\\end{verbatim}\n')
-                self.verbatim = 0
-        else:
-                self.body.append('\n')
-                self.insert_none_breaking_blanks = 0
-                self.literal_block = 0
-        self.body.append(self.context.pop())
+        # FIX: see `visit_literal_block`
+        LaTeXTranslator.depart_literal_block (self, node)
+        self.body.append ( '\\setbeamerfont{quote}{parent=quotation}\n' )
+
+        #if self.verbatim:
+        #        self.body.append('\n\\end{verbatim}\n')
+        #        self.verbatim = 0
+        #else:
+        #        self.body.append('\n')
+        #        self.insert_none_breaking_blanks = 0
+        #        self.literal_block = 0
+        #self.body.append(self.context.pop())
 
 
     def visit_bullet_list (self, node):
@@ -735,16 +753,16 @@ class BeamerTranslator (LaTeXTranslator):
 
     def astext (self):
         if self.pdfinfo is not None and self.pdfauthor:
-            self.pdfinfo.append('pdfauthor={%s}' % self.pdfauthor)
+            self.pdfinfo.append ('pdfauthor={%s}' % self.pdfauthor)
         if self.pdfinfo:
             pdfinfo = '\\hypersetup{\n' + ',\n'.join(self.pdfinfo) + '\n}\n'
         else:
             pdfinfo = ''
         head = '\\title{%s}\n' % self.title
-        if self.author_stack:
-            author_head = '\\author{%s}\n' % ' \\and\n'.join(['~\\\\\n'.join(author_lines)
-                                 for author_lines in self.author_stack])
-            head +=  author_head
+        if self.auth_stack:
+            auth_head = '\\author{%s}\n' % ' \\and\n'.join (\
+                ['~\\\\\n'.join (auth_lines) for auth_lines in self.auth_stack])
+            head +=  auth_head
         if self.date:
             date_head = '\\date{%s}\n' % self.date
             head += date_head
@@ -763,7 +781,8 @@ class BeamerTranslator (LaTeXTranslator):
         pass
 
     def visit_columnset (self, node):
-        assert not self.in_columnset, "already in column set, which cannot be nested"
+        assert not self.in_columnset, \
+            "already in column set, which cannot be nested"
         self.in_columnset = True
         self.body.append ('\\begin{columns}[T]\n')
 
