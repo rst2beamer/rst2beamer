@@ -1,0 +1,11 @@
+=====
+To do
+=====
+
+* 20091024: MP advises that - at least with rst2beamer 0.6.4 and docutils 0.60 - subsections are missing Adobe bookmark. What does the docutils LaTeX writer do for this?
+
+* 20091022: RK points out need for better testing. Difficult to test for fragments, but a demo document (test_all.rst) will do for the moment. What other features need to be in there?
+
+* 20090810: The bullet overlay syntax can be made a lot simpler using a single optparse flag (e.g. ``--overlaybullets``). Also, the default behaviour should arguably be to *not* overlay bullets, but this will change the current default behaviour.
+
+* 20090810: Desperately need maths markup. Sphinx has a pngmath extension module which may be suitable. 

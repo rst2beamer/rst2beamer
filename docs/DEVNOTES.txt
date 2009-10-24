@@ -1,0 +1,27 @@
+=================
+Development notes
+=================
+
+This document should not be included in the release distribution, and serves
+simply as internal notes and reminders for why certain things are the way they
+are.
+
+
+The literal and quote problem
+-----------------------------
+
+20091024 PMA: The reasoning and history here is complicated so it needs to be
+written down. Way back in the genesis of rst2beamer, a problem was encountered
+with literals. The docutils LateX writer typeset them correctly in a regular
+monospace (\ttfamily) font. However in Beamer documents they appeared as an
+italic monospace font. This is because (a) docutils expresses literal blocks
+as a \quote, and (b) the Beamer document class sets the quote font to be
+italic. (See the beamer themes/fonts files.) Way back, I apparently solved
+this problem by overriding the LaTeX writers' visit and depart methods for
+literals.
+
+Dim memory says that this worked in the days of docutils 0.4, but now
+(docutils 0.6), it strips the indenting from literal blocks. The solution is
+thus to use the parent literal methods, but to set the quote font to ttfamily
+before visiting a literal and reset it after leaving. This appears to work.
+
