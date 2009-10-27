@@ -7,7 +7,7 @@ v0.6.4, 2009-10-22
 * The parsed-literal environment was losing indentation, and perhaps has been
   since docutils 0.4. It now works correctly. 
   
-* Added "calling" information to examples.
+* Added "calling" information to examples. Also added bullet example.
 
 
 v0.6.2, 2009-10-20

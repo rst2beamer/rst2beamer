@@ -2,6 +2,13 @@
 Using columns in rst2beamer
 ===========================
 
+Usage
+-----
+
+The LaTeX source for the corresponding Beamer example can be produced::
+
+	rst2beamer columns.rst columns.tex
+
 
 Simple columns
 --------------

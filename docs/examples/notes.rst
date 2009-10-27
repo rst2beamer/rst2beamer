@@ -2,6 +2,22 @@
 Notes and handouts in rst2beamer
 ================================
 
+Usage
+-----
+
+The LaTeX source for the corresponding Beamer example without notes can be produced::
+
+	rst2beamer notes.rst notes.tex
+	
+Notes will be included (on the right) via::
+	
+	rst2beamer --shownotes true notes.rst notes_shownotes_true.tex
+
+A presentation with only the notes can be produced:: 
+
+		rst2beamer --shownotes only notes.rst notes_shownotes_only.tex
+
+	
 
 Showing notes
 -------------
