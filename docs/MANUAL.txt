@@ -54,7 +54,7 @@ Thus rst2beamer may be useful for teaching or conference presentations and has
 been used at Python conferences for those purposes.
 
 Conversely, rst2beamer doesn't do everything that Beamer or ReST can. Beamer
-is a sophisticated system that can make sophisticated presentations.
+is a complex system that can make sophisticated presentations.
 rst2beamer doesn't try to do everything that Beamer can, as this would foil
 the goal of simplicity. Supported features include:
 
@@ -68,7 +68,7 @@ Some examples can be found in the ``docs/examples`` directory of the
 distribution.
 
 There may also be ReST syntax that doesn't work or looks bad in the beamer
-output but most ReST will translate without problems.
+output but most ReST should translate without problems.
 
 
 Installation
@@ -436,10 +436,7 @@ formatted output::
 Earlier versions of rst2beamer did not work with docutils 0.4, seemingly due
 to changes in the LaTeX writer. While this has been fixed, most work has been
 done with docutils snapshots from version 0.5 and up. In balance, users are
-recommended to keep docutils updated.
-
-More recently, changes in the LaTeX writer in docutils 0.6 broke rst2beamer
-again. We believe all those bugs have been caught.
+recommended to keep docutils updated. More recently, changes in the LaTeX writer in docutils 0.6 broke rst2beamer again. We believe all those bugs have been caught.
 
 Not all features of beamer are supported, and some - that deal with with page
 layout or presentation - may never be. Introducing complex syntax to achieve
@@ -448,9 +445,7 @@ easy-to-write format. If you need a complex presentation, use Powerpoint or
 Keynote.
 
 If the content for an individual slide is too large, it will simply overflow
-the edges of the slide and disappear. Arguably, this is a sign you should put
-less on each slide.
-
+the edges of the slide and disappear. This usually occurs with large or long blocks of literal text that LaTeX is unable to wrap or reshape suitably. Arguably, this is a sign you should put less on each slide.
 
 
 Development notes
@@ -478,7 +473,7 @@ Pythonistas for use at conferences.
 Alternatives
 ~~~~~~~~~~~~
 
-Other output options for ReST were considered and discarded as follows:
+Other presentation formats were considered as output options for ReST and discarded as follows:
 
 * **ReportLab's Pythonpoint** requires a fixed frame size and would need
   custom XML output. Styling is done through Reportlab stylesheets, which can
@@ -508,8 +503,7 @@ Credits
 ~~~~~~~
 
 rst2beamer is developed by `Ryan Krauss <ryanwkrauss@gmail.com>`__ and
-`Paul-Michael Agapow <agapow@bbsrc.ac.uk>`__. Thanks to Dale Hathaway for
-helping track down the docutils 0.4 bug. Thanks to those who reported and
+`Paul-Michael Agapow <agapow@bbsrc.ac.uk>`__. Thanks to those who reported and
 helped us track down bugs: Perttu Laurinen, Mike Pennington, James Haggerty
 and Dale Hathaway.
 

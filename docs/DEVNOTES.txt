@@ -25,3 +25,13 @@ Dim memory says that this worked in the days of docutils 0.4, but now
 thus to use the parent literal methods, but to set the quote font to ttfamily
 before visiting a literal and reset it after leaving. This appears to work.
 
+
+Using Pygments to highlight code
+--------------------------------
+
+Duplicating the Sphinx ability to use Pygemnts to highlight code is both easy and hard. You have to use the fancyvrb package to get the Verbatim environment that Pygments produces. You also have to include a set of definitions that the LatexFormatter produces in the header. Also, there is weird problem that crops up when you use a Verbatim environment inside a frame. You get odd errors about something not completing or terminating, unless you give a "fragile" qualifier to the frame::
+
+   \begin{frame}[fragile]
+   
+
+

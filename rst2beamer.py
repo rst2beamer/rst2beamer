@@ -65,6 +65,12 @@ SHOWNOTES_OPTIONS = [
     SHOWNOTES_BOTTOM,
 ]
 
+HILITE_OPTIONS = {
+    'python':   'python',
+    'guess':    'guess',
+    'c++':      'cpp',
+}
+
 BEAMER_SPEC =   (
     'Beamer options',
     'These are derived almost entirely from the LaTeX2e options',
@@ -109,6 +115,30 @@ BEAMER_SPEC =   (
                     'default':   SHOWNOTES_FALSE,
                 }
             ),
+            # should the pygments highlighter be used for codeblocks?
+            (
+                "Use the Pygments syntax highlighter to color blocks of "
+                    "code. Otherwise, they will be typeset as simple literal "
+                    "text. Obviously Pygments must be installed or an error. "
+                    "will be raised. ",
+                ['--usepygments'],
+                {
+                    'action':    "store_true",
+                    'dest':      'usepygments',
+                    'default':   False,
+                }
+            ),
+            (
+                "The default language to hilight code blocks as. ",
+                ['--hilightlang'],
+                {
+                    'action':    'store',
+                    'type':      'choice',
+                    'dest':      'hilightlang',
+                    'choices':   HILITE_OPTIONS.values(),
+                    'default':   HILITE_OPTIONS['guess'],
+                }
+            ),
         ] + list (Latex2eWriter.settings_spec[2][2:])
     ),
 )
@@ -130,7 +160,6 @@ bool_dict = dict (zip (bool_strs, bool_vals))
 
 ### UTILS
 
-# Python 2.5 or 2.4
 def index (seq, f, fail=None):
     """
     Return the index of the first item in seq where f(item) is True.
@@ -235,10 +264,54 @@ def string_to_bool (stringin, default=True):
     else:
         return bool_dict[temp]
 
+def highlight_code (text, lang):
+    """
+    Syntax-highlight source code using Pygments.
+    
+    :Parameters:
+        text
+            The code to be formatted.
+        lang
+            The language of the source code.
+            
+    :Returns:
+        A LaTeX formatted representation.
+    
+    """
+    ## Preconditions & preparation:
+    assert (lang in HILITE_OPTIONS.keys()), \
+        "unrecognised highlight language '%s'" % lang
+    from pygments import highlight
+    from pygments.formatters import LatexFormatter
+    ## Main:
+    lexer = get_lexer (text, lang)
+    return highlight (text, lexer, LatexFormatter())
+
+    
+def get_lexer (text, lang):
+    """
+    Return the Pygments lexer for parsing this sourcecode.
+    """
+    # TODO: what if source has errors?
+    # TODO: should be more efficient way of doing this?
+    ## Preconditions & preparation:
+    from pygments.lexers import (get_lexer_by_name, TextLexer, guess_lexer)
+    ## Main:
+    if lang == 'guess':
+        try:
+            return guess_lexer (text)
+        except Exception:
+            return None
+    elif lang == 'none':
+        return TextLexer
+    else:
+        return get_lexer_by_name (lang) 
+
+
 
 ### NODES ###
 # Special nodes for marking up beamer layout
-
+    
 class columnset (nodes.container):
     """
     A group of columns to display on one slide.
@@ -267,6 +340,39 @@ class beamer_note (nodes.container):
 
 
 ### DIRECTIVES
+
+class CodeBlockDirective (Directive):
+    """
+    Directive for a code block with special highlighting or line numbering
+    settings.
+    
+    Unabashedly borrowed from the Sphinx source.
+    """
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = False
+    option_spec = {
+        'linenos': directives.flag,
+    }
+
+    def run (self):
+        # extract langauge from block or commandline
+        try:
+            language = self.arguments[0]
+        except IndexError:
+            language = 'guess'
+            
+        code = u'\n'.join (self.content)
+        literal = nodes.literal_block (code, code)
+        literal['classes'].append ('code-block')
+        literal['language'] = language
+        literal['linenos'] = 'linenos' in self.options
+        return [literal]
+
+for name in ['code-block', 'sourcecode']:
+    directives.register_directive (name, CodeBlockDirective)
+
 
 class SimpleColsDirective (Directive):
     """
@@ -463,9 +569,8 @@ class beamer_section (Directive):
         section_node.tagname = 'beamer_section'
         return [section_node]
 
-
-directives.register_directive ('beamer_section', beamer_section)
-directives.register_directive ('r2b_section', beamer_section)
+for name in ['beamer_section', 'r2b_section']:
+    directives.register_directive ('beamer_section', beamer_section)
 
 
 ### WRITER
@@ -477,6 +582,9 @@ class BeamerTranslator (LaTeXTranslator):
 
     def __init__ (self, document):
         LaTeXTranslator.__init__ (self, document)
+        
+        self.usepygments = document.settings.usepygments
+        
         self.head_prefix = [x for x in self.head_prefix
             if ('{typearea}' not in x)]
         #hyperref_posn = [i for i in range (len (self.head_prefix))
@@ -487,6 +595,8 @@ class BeamerTranslator (LaTeXTranslator):
             self.head_prefix.extend ([
                 '\\usepackage{hyperref}\n'
             ])
+
+            
         #self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
         self.head_prefix.extend ([
             '\\definecolor{rrblitbackground}{rgb}{0.55, 0.3, 0.1}\n',
@@ -498,6 +608,15 @@ class BeamerTranslator (LaTeXTranslator):
             '}\n',
         ])
 
+        if (self.usepygments):
+            #from pygments.formatters import LatexFormatter
+            #fmtr = LatexFormatter()
+            self.head_prefix.extend ([
+                '\\usepackage{fancyvrb}\n',
+                '\\usepackage{color}\n',
+                #LatexFormatter().get_style_defs(),
+            ])           
+        
         # set appropriate header options for theming
         theme = document.settings.theme
         if theme:
@@ -528,6 +647,13 @@ class BeamerTranslator (LaTeXTranslator):
             self.head_prefix.append ('\\usepackage{pgfpages}\n')
         self.head_prefix.append ('\\setbeameroption{%s}\n' % option_str)
 
+        if (self.usepygments):
+            from pygments.formatters import LatexFormatter
+            fmtr = LatexFormatter()
+            self.head_prefix.extend ([
+                LatexFormatter().get_style_defs(),
+            ])
+            
         self.overlay_bullets = string_to_bool (document.settings.overlaybullets, False)
         #using a False default because
         #True is the actual default.  If you are trying to pass in a value
@@ -538,7 +664,7 @@ class BeamerTranslator (LaTeXTranslator):
         self.in_column = False
         self.in_note = False
         self.frame_level = 0
-
+        
         # this fixes the hardcoded section titles in docutils 0.4
         self.d_class = DocumentClass ('article')
 
@@ -549,7 +675,7 @@ class BeamerTranslator (LaTeXTranslator):
         pass
 
     def begin_frametag (self):
-        return '\n\\begin{frame}\n'
+        return '\n\\begin{frame}[fragile]\n'
 
     def end_frametag (self):
         return '\\end{frame}\n'
@@ -596,42 +722,29 @@ class BeamerTranslator (LaTeXTranslator):
         # FIX: the purpose of this method is unclear, but it causes parsed
         # literals in docutils 0.6 to lose indenting. Thus we've solve the
         # problem be just getting rid of it. [PMA 20091020]
-        
-       # working due to changes in docutils and Beamer setting the quote font to
-          #italic. It should
-          
-        self.body.append ( '\\setbeamerfont{quote}{parent={}}\n' )
-        
-        LaTeXTranslator.visit_literal_block (self, node)
-        #if not self.active_table.is_open():
-        #         self.body.append('\n\n\\smallskip\n\\begin{rtbliteral}\n')
-        #         self.context.append('\\end{rtbliteral}\n\\smallskip\n\n')
-        #else:
-        #         self.body.append('\n')
-        #         self.context.append('\n')
-        #if (self.settings.use_verbatim_when_possible and (len(node) == 1)
-        #    # in case of a parsed-literal containing just a "**bold**" word:
-        #                and isinstance(node[0], nodes.Text)):
-        #         self.verbatim = 1
-        #         self.body.append('\\begin{verbatim}\n')
-        #else:
-        #         self.literal_block = 1
-        #         self.insert_none_breaking_blanks = 1
+        if (node_has_class (node, 'code-block') and self.usepygments):
+            self.visit_codeblock (node)
+        else:
+            self.body.append ( '\\setbeamerfont{quote}{parent={}}\n' )
+            LaTeXTranslator.visit_literal_block (self, node)
 
     def depart_literal_block (self, node):
         # FIX: see `visit_literal_block`
-        LaTeXTranslator.depart_literal_block (self, node)
-        self.body.append ( '\\setbeamerfont{quote}{parent=quotation}\n' )
+        if (node_has_class (node, 'code-block') and self.usepygments):
+            self.visit_codeblock (node)
+        else:
+            LaTeXTranslator.depart_literal_block (self, node)
+            self.body.append ( '\\setbeamerfont{quote}{parent=quotation}\n' )
 
-        #if self.verbatim:
-        #        self.body.append('\n\\end{verbatim}\n')
-        #        self.verbatim = 0
-        #else:
-        #        self.body.append('\n')
-        #        self.insert_none_breaking_blanks = 0
-        #        self.literal_block = 0
-        #self.body.append(self.context.pop())
-
+    def visit_codeblock (self, node):
+        hilite_code = highlight_code (node.rawsource, node['language'])
+        print hilite_code
+        self.body.append ('\n' + hilite_code + '\n')
+        print "visit codeblock"
+        raise nodes.SkipNode
+        
+    def depart_codeblock (self, node):
+        print "depart codeblock"
 
     def visit_bullet_list (self, node):
         # NOTE: required by the loss of 'topic_classes' is docutils 0.6
