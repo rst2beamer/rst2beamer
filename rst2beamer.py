@@ -27,7 +27,7 @@ See <http:www.agapow.net/software/rst2beamer> for more details.
 
 __docformat__ = 'restructuredtext en'
 __author__ = "Ryan Krauss <ryanwkrauss@gmail.com> & Paul-Michael Agapow <agapow@bbsrc.ac.uk>"
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 
 
 ### IMPORTS ###
@@ -738,13 +738,11 @@ class BeamerTranslator (LaTeXTranslator):
 
     def visit_codeblock (self, node):
         hilite_code = highlight_code (node.rawsource, node['language'])
-        print hilite_code
         self.body.append ('\n' + hilite_code + '\n')
-        print "visit codeblock"
         raise nodes.SkipNode
         
     def depart_codeblock (self, node):
-        print "depart codeblock"
+        pass
 
     def visit_bullet_list (self, node):
         # NOTE: required by the loss of 'topic_classes' is docutils 0.6
