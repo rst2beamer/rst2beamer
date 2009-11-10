@@ -44,21 +44,21 @@ where ``option`` can be:
 The note directive
 ------------------
 
-Notes can be included with the ``r2b_note`` directive.
+Notes can be included with the ``r2b-note`` directive.
 
-.. r2b_note::
+.. r2b-note::
 
 	This is an example.
 
 Multiple notes can be included in one slide.
 
-.. r2b_note::
+.. r2b-note::
 
 	This is an example of that.
 	
 Slides without any notes will produce an empty note slide.
 
-.. r2b_note::
+.. r2b-note::
 
 	Look at the previous slide for an example of that.
 
@@ -70,14 +70,14 @@ The custom r2b directives won't be recognised by any writer other than
 rst2beamer. Therefore, we allow certain containers (which most other
 writers should recognise and at worst ignore) to act like notes.
 
-.. container:: r2b_note
+.. container:: r2b-note
 
    Compatibility is important
 
-Any container with the name 'r2b_note' or 'r2b-note' will
+Any container with the name 'r2b-note' or 'r2b-note' will
 be handled like the notes directive.
 
-.. container:: r2b_note
+.. container:: r2b-note
 
    Important: I must find out why the container names are being munged.
 

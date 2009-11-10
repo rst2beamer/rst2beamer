@@ -27,10 +27,12 @@ See <http:www.agapow.net/software/rst2beamer> for more details.
 
 __docformat__ = 'restructuredtext en'
 __author__ = "Ryan Krauss <ryanwkrauss@gmail.com> & Paul-Michael Agapow <agapow@bbsrc.ac.uk>"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 
 ### IMPORTS ###
+
+import re
 
 try:
     locale.setlocale (locale.LC_ALL, '')
@@ -121,22 +123,34 @@ BEAMER_SPEC =   (
                     "code. Otherwise, they will be typeset as simple literal "
                     "text. Obviously Pygments must be installed or an error. "
                     "will be raised. ",
-                ['--usepygments'],
+                ['--codeblocks-use-pygments'],
                 {
                     'action':    "store_true",
-                    'dest':      'usepygments',
+                    'dest':      'cb_use_pygments',
                     'default':   False,
                 }
             ),
+            # replace tabs inside codeblocks?
+            (
+                "Replace the leading tabs in codeblocks with spaces.",
+                ['--codeblocks-replace-tabs'],
+                {
+                    'action':    'store',
+                    'type':      int,
+                    'dest':      'cb_replace_tabs',
+                    'default':   0,
+                }
+            ),
+            # what language the codeblock is if not specified
             (
                 "The default language to hilight code blocks as. ",
-                ['--hilightlang'],
+                ['--codeblocks-default-language'],
                 {
                     'action':    'store',
                     'type':      'choice',
-                    'dest':      'hilightlang',
+                    'dest':      'cb_default_lang',
                     'choices':   HILITE_OPTIONS.values(),
-                    'default':   HILITE_OPTIONS['guess'],
+                    'default':   'guess',
                 }
             ),
         ] + list (Latex2eWriter.settings_spec[2][2:])
@@ -160,6 +174,63 @@ bool_dict = dict (zip (bool_strs, bool_vals))
 
 ### UTILS
 
+LEADING_SPACE_RE = re.compile ('^ +')
+
+def adjust_indent_spaces (strn, orig_width=8, new_width=3):
+    """
+    Adjust the leading space on a string so as to change the indent width.
+    
+    :Parameters:
+        strn
+            The source string to change.
+        orig_width
+            The expected width for an indent in the source string.
+        new_width
+            The new width to make an ident.
+            
+    :Returns:
+        The original string re-indented.
+    
+    That takes strings that may be indented by a set number of spaces (or its
+    multiple) and adjusts the indent for a new number of spaces. So if the
+    expected indent width is 8 and the desired ident width is 3, a string has
+    been indented by 16 spaces, will be changed to have a indent of 6.
+    
+    For example::
+    
+        >>> adjust_indent_spaces ('        foo')
+        '   foo'
+        >>> adjust_indent_spaces ('      foo', orig_width=2, new_width=1)
+        '   foo'
+            
+    This is useful where meaningful indent must be preserved (i.e. passed
+    through) ReST, especially tabs when used in the literal environments. ReST
+    transforms tabs-as-indents to 8 spaces, which leads to excessively spaced
+    out text. This function can be used to adjust the indent step to a
+    reasonable size.
+    
+    .. note::
+    
+        Excess spaces (those above and beyond a multiple of the original
+        indent width) will be preserved. Only indenting spaces will be
+        handled. Mixing tabs and spaces is - as always - a bad idea.
+    
+    """
+    ## Preconditions & preparation:
+    assert (1 <= orig_width)
+    assert (0 <= new_width)
+    if (orig_width == new_width):
+        return strn
+    ## Main:
+    match = LEADING_SPACE_RE.match (strn)
+    if (match):
+        indent_len = match.end() - match.start()
+        indent_cnt = indent_len / orig_width
+        indent_depth = indent_cnt * orig_width
+        strn = ' ' * indent_cnt * new_width + strn[indent_depth:]
+    return strn
+    
+    
 def index (seq, f, fail=None):
     """
     Return the index of the first item in seq where f(item) is True.
@@ -193,7 +264,8 @@ def node_has_class (node, classes):
     :Returns:
         A boolean indicating membership.
             
-    A convenience function, 
+    A convenience function, largely for testing for the special class names
+    in containers. 
     """
     ## Preconditions & preparation:
     # wrap single name in list
@@ -204,6 +276,31 @@ def node_has_class (node, classes):
         if cname in node['classes']:
             return True
     return False
+
+
+def node_lang_class (node):
+    """
+    Extract a language specification from a node class names.
+
+    :Parameters:
+        node
+            A docutils node
+
+    :Returns:
+        A string giving a language abbreviation (e.g. 'py') or None if no
+        langauge is found.
+
+    Some sourcecode containers can pass a (programming) language specification
+    by passing it via a classname like 'lang-py'. This function searches a
+    nodes classnames for those starting with 'lang-' and returns the trailing
+    portion. Note that if more than one classname matches, only the first is
+    seen.
+    """
+    ## Main:
+    for cname in node['classes']:
+        if (cname.startswith ('lang-')):
+            return cname[5:]
+    return None
 
 
 def wrap_children_in_columns (par_node, children, width=None):
@@ -264,6 +361,7 @@ def string_to_bool (stringin, default=True):
     else:
         return bool_dict[temp]
 
+
 def highlight_code (text, lang):
     """
     Syntax-highlight source code using Pygments.
@@ -275,25 +373,36 @@ def highlight_code (text, lang):
             The language of the source code.
             
     :Returns:
-        A LaTeX formatted representation.
+        A LaTeX formatted representation of the source code.
     
     """
     ## Preconditions & preparation:
-    assert (lang in HILITE_OPTIONS.keys()), \
-        "unrecognised highlight language '%s'" % lang
     from pygments import highlight
     from pygments.formatters import LatexFormatter
     ## Main:
     lexer = get_lexer (text, lang)
-    return highlight (text, lexer, LatexFormatter())
+    lexer.add_filter('whitespace', tabsize=3, tabs=' ')
+    return highlight (text, lexer, LatexFormatter(tabsize=3))
 
-    
+
 def get_lexer (text, lang):
     """
     Return the Pygments lexer for parsing this sourcecode.
+    
+    :Parameters:
+        text
+            The sourcecode to be lexed for highlighting. This is analysed if
+            the language is 'guess'.
+        lang
+            An abbreviation for the programming langauge of the code. Can be
+            any 'name' accepted by Pygments, including 'none' (plain text) or
+            'guess' (analyse the passed code for clues).
+    
+    :Returns:
+        A Pygments lexer.
+    
     """
     # TODO: what if source has errors?
-    # TODO: should be more efficient way of doing this?
     ## Preconditions & preparation:
     from pygments.lexers import (get_lexer_by_name, TextLexer, guess_lexer)
     ## Main:
@@ -305,7 +414,7 @@ def get_lexer (text, lang):
     elif lang == 'none':
         return TextLexer
     else:
-        return get_lexer_by_name (lang) 
+        return get_lexer_by_name (lang)
 
 
 
@@ -358,11 +467,11 @@ class CodeBlockDirective (Directive):
 
     def run (self):
         # extract langauge from block or commandline
+        # we allow the langauge specification to be optional
         try:
             language = self.arguments[0]
         except IndexError:
             language = 'guess'
-            
         code = u'\n'.join (self.content)
         literal = nodes.literal_block (code, code)
         literal['classes'].append ('code-block')
@@ -407,8 +516,8 @@ class SimpleColsDirective (Directive):
         ## Postconditions & return:
         return [cset]
 
-
-directives.register_directive ('r2b_simplecolumns', SimpleColsDirective)
+for name in ['r2b-simplecolumns', 'r2b_simplecolumns']:
+    directives.register_directive (name, SimpleColsDirective)
 
 
 class ColumnSetDirective (Directive):
@@ -473,8 +582,8 @@ class ColumnSetDirective (Directive):
         ## Postconditions & return:
         return [cset]
 
-
-directives.register_directive ('r2b_columnset', ColumnSetDirective)
+for name in ['r2b-columnset', 'r2b_columnset']:
+    directives.register_directive (name, ColumnSetDirective)
 
 
 class ColumnDirective (Directive):
@@ -511,8 +620,8 @@ class ColumnDirective (Directive):
         ## Postconditions & return:
         return [col]
 
-
-directives.register_directive ('r2b_column', ColumnDirective)
+for name in ['r2b-column', 'r2b_column']:
+    directives.register_directive (name, ColumnDirective)
 
 
 class NoteDirective (Directive):
@@ -539,8 +648,8 @@ class NoteDirective (Directive):
         ## Postconditions & return:
         return [note_node]
 
-
-directives.register_directive ('r2b_note', NoteDirective)
+for name in ['r2b-note', 'r2b_note']:
+    directives.register_directive (name, NoteDirective)
 
 
 class beamer_section (Directive):
@@ -569,8 +678,8 @@ class beamer_section (Directive):
         section_node.tagname = 'beamer_section'
         return [section_node]
 
-for name in ['beamer_section', 'r2b_section']:
-    directives.register_directive ('beamer_section', beamer_section)
+for name in ['beamer_section', 'r2b-section', 'r2b_section']:
+    directives.register_directive (name, beamer_section)
 
 
 ### WRITER
@@ -583,7 +692,10 @@ class BeamerTranslator (LaTeXTranslator):
     def __init__ (self, document):
         LaTeXTranslator.__init__ (self, document)
         
-        self.usepygments = document.settings.usepygments
+        # record the the settings for codeblocks
+        self.cb_use_pygments = document.settings.cb_use_pygments
+        self.cb_replace_tabs = document.settings.cb_replace_tabs
+        self.cb_default_lang = document.settings.cb_default_lang
         
         self.head_prefix = [x for x in self.head_prefix
             if ('{typearea}' not in x)]
@@ -596,7 +708,6 @@ class BeamerTranslator (LaTeXTranslator):
                 '\\usepackage{hyperref}\n'
             ])
 
-            
         #self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
         self.head_prefix.extend ([
             '\\definecolor{rrblitbackground}{rgb}{0.55, 0.3, 0.1}\n',
@@ -608,7 +719,7 @@ class BeamerTranslator (LaTeXTranslator):
             '}\n',
         ])
 
-        if (self.usepygments):
+        if (self.cb_use_pygments):
             #from pygments.formatters import LatexFormatter
             #fmtr = LatexFormatter()
             self.head_prefix.extend ([
@@ -620,10 +731,12 @@ class BeamerTranslator (LaTeXTranslator):
         # set appropriate header options for theming
         theme = document.settings.theme
         if theme:
-            self.head_prefix.append('\\usetheme{%s}\n' % theme)
+            self.head_prefix.append ('\\usetheme{%s}\n' % theme)
 
         # set appropriate header options for note display
         shownotes = document.settings.shownotes
+        if shownotes == SHOWNOTES_TRUE:
+            shownotes = SHOWNOTES_RIGHT
         use_pgfpages = True
         if (shownotes == SHOWNOTES_FALSE):
             option_str = 'hide notes'
@@ -633,7 +746,7 @@ class BeamerTranslator (LaTeXTranslator):
         else:
             if (shownotes == SHOWNOTES_LEFT):
                 notes_posn = 'left'
-            elif (shownotes in [SHOWNOTES_RIGHT, SHOWNOTES_TRUE]):
+            elif (shownotes in SHOWNOTES_RIGHT):
                 notes_posn = 'right'                 
             elif (shownotes == SHOWNOTES_TOP):
                 notes_posn = 'top'                 
@@ -647,7 +760,7 @@ class BeamerTranslator (LaTeXTranslator):
             self.head_prefix.append ('\\usepackage{pgfpages}\n')
         self.head_prefix.append ('\\setbeameroption{%s}\n' % option_str)
 
-        if (self.usepygments):
+        if (self.cb_use_pygments):
             from pygments.formatters import LatexFormatter
             fmtr = LatexFormatter()
             self.head_prefix.extend ([
@@ -681,11 +794,10 @@ class BeamerTranslator (LaTeXTranslator):
         return '\\end{frame}\n'
 
     def visit_section (self, node):
-        if has_sub_sections(node):
+        if has_sub_sections (node):
             temp = self.section_level + 1
             if temp > self.frame_level:
                 self.frame_level = temp
-                #print('self.frame_level=%s' % self.frame_level)
         else:
             self.body.append (self.begin_frametag())
         LaTeXTranslator.visit_section (self, node)
@@ -707,37 +819,51 @@ class BeamerTranslator (LaTeXTranslator):
         if node.astext() == 'dummy':
             raise nodes.SkipNode
         if (self.section_level == self.frame_level+1):#1
-                self.body.append ('\\frametitle{%s}\n\n' % \
-                                  self.encode(node.astext()))
-                raise nodes.SkipNode
+            self.body.append ('\\frametitle{%s}\n\n' % \
+                self.encode(node.astext()))
+            raise nodes.SkipNode
         else:
-                LaTeXTranslator.visit_title (self, node)
+            LaTeXTranslator.visit_title (self, node)
 
     def depart_title (self, node):
         if (self.section_level != self.frame_level+1):#1
-                LaTeXTranslator.depart_title (self, node)
+            LaTeXTranslator.depart_title (self, node)
 
 
     def visit_literal_block (self, node):
         # FIX: the purpose of this method is unclear, but it causes parsed
         # literals in docutils 0.6 to lose indenting. Thus we've solve the
         # problem be just getting rid of it. [PMA 20091020]
-        if (node_has_class (node, 'code-block') and self.usepygments):
+        if (node_has_class (node, 'code-block') and self.cb_use_pygments):
             self.visit_codeblock (node)
         else:
-            self.body.append ( '\\setbeamerfont{quote}{parent={}}\n' )
+            self.body.append ('\\setbeamerfont{quote}{parent={}}\n')
             LaTeXTranslator.visit_literal_block (self, node)
 
     def depart_literal_block (self, node):
         # FIX: see `visit_literal_block`
-        if (node_has_class (node, 'code-block') and self.usepygments):
+        if (node_has_class (node, 'code-block') and self.cb_use_pygments):
             self.visit_codeblock (node)
         else:
             LaTeXTranslator.depart_literal_block (self, node)
             self.body.append ( '\\setbeamerfont{quote}{parent=quotation}\n' )
 
     def visit_codeblock (self, node):
-        hilite_code = highlight_code (node.rawsource, node['language'])
+        # was langauge argument defined on node?
+        lang =  node.get ('language', None)
+        # otherwise, was it defined in node classes?
+        if (lang is None):
+            lang = node_lang_class (node)
+        # otherwise, use commandline argument or default
+        if lang is None:
+            lang = self.cb_default_lang
+        # replace tabs if required
+        srccode = node.rawsource
+        if (self.cb_replace_tabs):
+            srccode = '\n'.join (adjust_indent_spaces (x,
+                new_width=self.cb_replace_tabs) for x in srccode.split ('\n'))
+        # hilight the code
+        hilite_code = highlight_code (srccode, lang)
         self.body.append ('\n' + hilite_code + '\n')
         raise nodes.SkipNode
         
@@ -745,7 +871,7 @@ class BeamerTranslator (LaTeXTranslator):
         pass
 
     def visit_bullet_list (self, node):
-        # NOTE: required by the loss of 'topic_classes' is docutils 0.6
+        # NOTE: required by the loss of 'topic_classes' in docutils 0.6
         # TODO: so what replaces it?
         if (hasattr (self, 'topic_classes') and
             ('contents' in self.topic_classes)):
@@ -779,8 +905,7 @@ class BeamerTranslator (LaTeXTranslator):
         #visit_enumerated_list that throws out much of what latex
         #does to handle them for us.  I am going back to relying
         #on latex.
-        if (hasattr (self, 'topic_classes') and
-                ('contents' in self.topic_classes)):
+        if ('contents' in getattr (self, 'topic_classes', [])):
             if self.use_latex_toc:
                 raise nodes.SkipNode
             self.body.append( '\\begin{list}{}{}\n' )
@@ -795,33 +920,30 @@ class BeamerTranslator (LaTeXTranslator):
                                  % (node['start']-1))
             
 
-
     def depart_enumerated_list (self, node):
-        if (hasattr (self, 'topic_classes') and
-                ('contents' in self.topic_classes)):
-            self.body.append( '\\end{list}\n' )
+        if ('contents' in getattr (self, 'topic_classes', [])):
+            self.body.append ('\\end{list}\n')
         else:
-            self.body.append( '\\end{enumerate}\n' )
-
+            self.body.append ('\\end{enumerate}\n' )
 
 
     def astext (self):
         if self.pdfinfo is not None and self.pdfauthor:
             self.pdfinfo.append ('pdfauthor={%s}' % self.pdfauthor)
         if self.pdfinfo:
-            pdfinfo = '\\hypersetup{\n' + ',\n'.join(self.pdfinfo) + '\n}\n'
+            pdfinfo = '\\hypersetup{\n' + ',\n'.join (self.pdfinfo) + '\n}\n'
         else:
             pdfinfo = ''
         head = '\\title{%s}\n' % self.title
         if self.auth_stack:
             auth_head = '\\author{%s}\n' % ' \\and\n'.join (\
                 ['~\\\\\n'.join (auth_lines) for auth_lines in self.auth_stack])
-            head +=  auth_head
+            head += auth_head
         if self.date:
             date_head = '\\date{%s}\n' % self.date
             head += date_head
         return ''.join (self.head_prefix + [head] + self.head + [pdfinfo]
-                        + self.body_prefix  + self.body + self.body_suffix)
+            + self.body_prefix  + self.body + self.body_suffix)
 
 
     def visit_docinfo (self, node):
@@ -870,19 +992,19 @@ class BeamerTranslator (LaTeXTranslator):
         # NOTE: theres something wierd here where ReST seems to translate
         # underscores in container identifiers into hyphens. So for the
         # moment we'll allow both.
-        if (node_has_class (node, ['r2b-simplecolumns', 'r2b_simplecolumns'])):
+        if (node_has_class (node, 'r2b-simplecolumns')):
            self.visit_columnset (node)
            wrap_children_in_columns (node, node.children)
-        elif (node_has_class (node, ['r2b-note', 'r2b_note'])):
+        elif (node_has_class (node, 'r2b-note')):
            self.visit_beamer_note (node)
         else:
             # currently the LaTeXTranslator does nothing, but just in case
             LaTeXTranslator.visit_container (self, node)
 
     def depart_container (self, node):
-        if (node_has_class (node, ['r2b-simplecolumns', 'r2b_simplecolumns'])):
+        if (node_has_class (node, 'r2b-simplecolumns')):
             self.depart_columnset (node) 
-        elif (node_has_class (node, ['r2b-note', 'r2b_note'])):
+        elif (node_has_class (node, 'r2b-note')):
             self.depart_beamer_note (node)
         else:
             # currently the LaTeXTranslator does nothing, but just in case

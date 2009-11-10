@@ -36,7 +36,7 @@ Testing columns
 Simple columns
 ~~~~~~~~~~~~~~
 
-.. r2b_simplecolumns::
+.. r2b-simplecolumns::
 
 	This is a demonstration of the rst2beamer simple column directive. It
 	should turn every element underneath it into a column, side by side with
@@ -53,7 +53,7 @@ Simple columns
 Simple columns with a set width
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. r2b_simplecolumns::
+.. r2b-simplecolumns::
 	:width: 0.70
 
 	This is a demonstration of the rst2beamer simple column directive with a
@@ -65,7 +65,7 @@ Simple columns with a set width
 Testing containers as columns
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. container:: r2b_simplecolumns
+.. container:: r2b-simplecolumns
 
 	This uses a container to set out the columns.
 
@@ -75,13 +75,13 @@ Testing containers as columns
 Testing explicit columns
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. r2b_columnset::
+.. r2b-columnset::
 
-	.. r2b_column::
+	.. r2b-column::
 
 		This tests the explicit column directive. No widths are given.
 
-	.. r2b_column::
+	.. r2b-column::
 
 		There should be two columns sharing the default width of 0.90.
 
@@ -91,15 +91,15 @@ Testing explicit columns
 Testing explicit columns with widths
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. r2b_columnset::
+.. r2b-columnset::
 	:width: 0.80
 
-	.. r2b_column::
+	.. r2b-column::
 		:width: 0.50
 
 		The column set has a width of 0.80, and this column 0.50.
 
-	.. r2b_column::
+	.. r2b-column::
 
 		This column should get the remainder, 0.30.
 
@@ -110,10 +110,10 @@ Testing notes
 Introduction
 ~~~~~~~~~~~~
 
-The notes on the follwing oages wil only show up if rst2beamer is run with
+The notes on the follwing pages wil only show up if rst2beamer is run with
 the ``shownotes`` option. For example::
 
-	rst2beamer --shownotes  true test_all.rst test_all.tex
+	rst2beamer --shownotes true test_all.rst test_all.tex
 
 
 Testing the note directive
@@ -122,7 +122,7 @@ Testing the note directive
 
 There is a note on this page.
 
-.. r2b_note::
+.. r2b-note::
 
 	This is it.
 
@@ -132,19 +132,19 @@ Testing multiple note directives
 
 There are several notes on this page.
 
-.. r2b_note::
+.. r2b-note::
 
 	This is one.
 
 Not that you should notice.
 
-.. r2b_note::
+.. r2b-note::
 
 	This is another.
 
 Unless you use "shownotes".
 
-.. r2b_note::
+.. r2b-note::
 
 	This is a third.
 
@@ -154,13 +154,13 @@ Notes as containers
 
 Notes can also be containers.
 
-.. container:: r2b_note
+.. container:: r2b-note
 
    This is a note.
 
 This helps with compatibility.
 
-.. container:: r2b_note
+.. container:: r2b-note
 
    This is a second.
 
@@ -201,3 +201,16 @@ some keywords in italics:
 	*for* i in *xrange* (10):
 		*print* "foo", i
 
+
+Codeblocks
+~~~~~~~~~~
+
+The below should appear as a simple literal blocks, or highlighted if you use pygments: 
+
+.. code-block:: python
+
+	def myfunc (arg1, arg2='foo'):
+		global baz
+		bar = unicode (quux)
+		return 25
+				

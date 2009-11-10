@@ -13,7 +13,7 @@ The LaTeX source for the corresponding Beamer example can be produced::
 Simple columns
 --------------
 
-.. r2b_simplecolumns::
+.. r2b-simplecolumns::
 	:width: 0.95
 
 	This is a demonstration of the rst2beamer simple column directive. It
@@ -32,23 +32,23 @@ Simple columns
 Containers as columns
 ---------------------
 
-.. container:: r2b_simplecolumns
+.. container:: r2b-simplecolumns
 
 	The custom r2b directives won't be recognised by any writer other than
 	rst2beamer. Therefore, we allow certain containers (which most other
 	writers should recognise and at worst ignore) to act like column sets.
 
-	Any container with the name 'r2b_simplecolumns' or 'r2b-simplecolumns' will
+	Any container with the name 'r2b-simplecolumns' or 'r2b-simplecolumns' will
 	be handled like the simple columns directive. 
 
 
 Explicit columns
 ----------------
 
-.. r2b_columnset::
+.. r2b-columnset::
 	:width: 0.95
 
-	.. r2b_column::
+	.. r2b-column::
 		:width: 0.60
 		
 		If you insist on setting columns explicitly, you can, grouping multiple
@@ -57,7 +57,7 @@ Explicit columns
 		The width of the column set and individual columns can be given. This
 		set and column are 0.95 and 0.60 wide respectively.
 		
-	.. r2b_column::
+	.. r2b-column::
 	
 		Columns not given a width (like this one) share the remainder. 
 	
