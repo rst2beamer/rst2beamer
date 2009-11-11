@@ -51,13 +51,17 @@ codeblocks within containers with a special class. As with columns, this
 should allow a simple portability without requiring a special directive. But
 there's a few reasons why this won't work:
 
-* Making it a container means that the contents will be parsed and formatting lost.
+* Making it a container means that the contents will be parsed and formatting
+  lost.
 
-* We can't put a class on a literal block, because in ReST it isn't a directive, it's pure syntax (`::`).
+* We can't put a class on a literal block, because in ReST it isn't a
+  directive, it's pure syntax (`::`).
 
-* Parsed literal blocks are a directive, but parsing it for ReST markup and highlighting it with Pygments presents an intractable tangle.
+* Parsed literal blocks are a directive, but parsing it for ReST markup and
+  highlighting it with Pygments presents an intractable tangle.
 
-* Line blocks are meant for line formatted normal text (like poetry), and perverting it for codeblocks seems inappropriate.
+* Line blocks are meant for line formatted normal text (like poetry), and
+  perverting it for codeblocks seems inappropriate.
 
 If you use tabs to indent a codeblock, the indenting comes out in Beamer as
 very wide - 8 spaces each. Thus the "replace-tabs" argument was introduced,
@@ -67,11 +71,17 @@ replace them with 3 spaces not 8), we have to search and replace 8 space
 stretches. If the source has mixed tabs and spaces, or if the "replace-tabs"
 option is used where spaces are used for indenting, bad things could happen.
 
-It's unclear to me what happens if you try to syntax-color (or guess the language of) incorrect or malformed code.
+It's unclear to me what happens if you try to syntax-color (or guess the
+language of) incorrect or malformed code.
 
 
 Normalise directive names
 -------------------------
 
-20091029 PMA: Most docutils names use hyphens as opposed to underscores (e.g. ``code-blocks``). As an added complexity, underscores appear to be translated into hyphens by docutils, so we've gotten in a a scrap allowing all sorts of names. From this point on, hyphens shall be the "official" style ("r2b-" as opposed to "r2b_"), although existing underscores shall maintained silently for compatibility.
+20091029 PMA: Most docutils names use hyphens as opposed to underscores (e.g.
+``code-blocks``). As an added complexity, underscores appear to be translated
+into hyphens by docutils, so we've gotten in a a scrap allowing all sorts of
+names. From this point on, hyphens shall be the "official" style (``r2b-`` as
+opposed to ``r2b_``), although existing underscores shall maintained silently
+for compatibility.
 

@@ -2,6 +2,8 @@
 To do
 =====
 
+* 20091111: Replace leading tabs on literal blocks, just like for code blocks?
+
 * 20091029: Matthew McCormick reports that the enumerated list is failing. Of course this is due to docutils 0.6, which creates its own complicated and byzantine environment to handle enumerated lists, without using ``enumerate``. For the moment, so as to handle backwards compatibility with docutils 0.5, we'll keep using our own environment.
 
 * 20091028: RK reports that an image in a column aligns bad - it seems to get pushed to the bottom of the column. With docutils 0.6, and calling the latex image functions, it seems to be okay. But this loses our nice global resizing and centering of images. Maybe we can hack the right info onto the nodes.
