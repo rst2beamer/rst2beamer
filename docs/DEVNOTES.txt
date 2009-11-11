@@ -49,7 +49,7 @@ portable to Sphinx.
 Initially, it seemed sensible to a "container trick" with codeblocks, allowing
 codeblocks within containers with a special class. As with columns, this
 should allow a simple portability without requiring a special directive. But
-there's a few reaosn why this won't work:
+there's a few reasons why this won't work:
 
 * Making it a container means that the contents will be parsed and formatting lost.
 
@@ -58,6 +58,16 @@ there's a few reaosn why this won't work:
 * Parsed literal blocks are a directive, but parsing it for ReST markup and highlighting it with Pygments presents an intractable tangle.
 
 * Line blocks are meant for line formatted normal text (like poetry), and perverting it for codeblocks seems inappropriate.
+
+If you use tabs to indent a codeblock, the indenting comes out in Beamer as
+very wide - 8 spaces each. Thus the "replace-tabs" argument was introduced,
+but things are complicated. Upon reading ReST replaces tabs with 8 spaces.
+This happens even for literal and raw blocks. Thus, to resize the tabs (e.g.
+replace them with 3 spaces not 8), we have to search and replace 8 space
+stretches. If the source has mixed tabs and spaces, or if the "replace-tabs"
+option is used where spaces are used for indenting, bad things could happen.
+
+It's unclear to me what happens if you try to syntax-color (or guess the language of) incorrect or malformed code.
 
 
 Normalise directive names

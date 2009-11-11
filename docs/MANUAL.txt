@@ -408,6 +408,46 @@ directive::
 	See the "notes" input and output example files.
 
 
+Codeblocks
+----------
+
+Many presentations will need to display programming code. ReST already allows sourcecode to be included with the literal environment::
+
+   ::
+
+	def myfunc (arg1, arg2='foo'):
+		global baz
+		bar = unicode (quux)
+		return 25
+
+rst2beamer improves on this with ``code-block`` directive. In the simplest use, ``code-block`` (or it's synonym, ``sourcecode``) duplicates the literal enviroment::
+
+   .. code-block::
+
+   	def myfunc (arg1, arg2='foo'):
+   		global baz
+   		bar = unicode (quux)
+   		return 25
+
+However, if the Pygments syntax coloring library is installed, and the commandline argument ``--codeblocks-use-pygments`` is used, keywords and syntax will be highlighted in a language appropriate manner.
+
+The language is specified by a optional argument to ``code-block``::
+
+   .. code-block:: python
+   
+The language abbreviation is any of the "names" recognised by Pygments, which for the most part are common sense (e.g. *perl*, *cpp*, *java*). If the language is not provided, it is deduced in two ways. First if the commandline argument ``--codeblocks-default-language`` has been used, it sets the language for any unspecified codeblocks. Otherwise, the code is parsed in an attempt to deduce its type.
+
+If tabs are used for indenting in a ReST source document, code can appear overly spread out (8 spaces per tabs). The ``--codeblocks-replace-tabs`` commandline option can be used to set the leading tabs in a codeblock ot a different number of spaces.
+
+.. caution::
+
+   There are potential traps in adjusting codeblock tabs. ReST translates tabs
+   to 8 spaces upon reading, so the readjustment of tabs to a different size
+   necessitates reading in a stretch of indenting spaces, dividing it into
+   "tabs" and then replacing those with a different stretch of spaces. Thus,
+   mixing tabs with space is - as always - a bad idea, and replacing tabs on
+   a document indented with spaces is even worse.
+
 
 Tips, tricks and limitations
 ----------------------------

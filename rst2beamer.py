@@ -458,8 +458,8 @@ class CodeBlockDirective (Directive):
     Unabashedly borrowed from the Sphinx source.
     """
     has_content = True
-    required_arguments = 1
-    optional_arguments = 0
+    required_arguments = 0
+    optional_arguments = 1
     final_argument_whitespace = False
     option_spec = {
         'linenos': directives.flag,
@@ -834,6 +834,7 @@ class BeamerTranslator (LaTeXTranslator):
         # FIX: the purpose of this method is unclear, but it causes parsed
         # literals in docutils 0.6 to lose indenting. Thus we've solve the
         # problem be just getting rid of it. [PMA 20091020]
+        # TODO: replace leading tabs like in codeblocks?
         if (node_has_class (node, 'code-block') and self.cb_use_pygments):
             self.visit_codeblock (node)
         else:
