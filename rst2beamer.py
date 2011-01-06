@@ -1033,7 +1033,7 @@ class BeamerTranslator (LaTeXTranslator):
         
 
     def end_frametag (self):
-        return '\\end{frame}\n'
+        return '\n\\end{frame}\n'
 
     def visit_section (self, node):
         if has_sub_sections (node):
