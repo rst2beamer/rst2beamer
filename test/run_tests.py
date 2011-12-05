@@ -24,6 +24,9 @@ parser = OptionParser(usage)
 parser.add_option("-t","--traceback", action="store_true", dest="traceback", \
                   help="run rst2beamer.py with traceback option.")
 
+parser.add_option("-r","--runlatex", action="store_true", dest="runlatex", \
+                  help="boolean option to run pdflatex for all the test files.")
+
 parser.set_defaults(traceback=False)
 
 (options, args) = parser.parse_args()
@@ -104,6 +107,11 @@ for item in testing_files:
 
     if cur_fail == False:
         passed += 1
+
+    if options.runlatex:
+        pdfcmd = 'pdflatex %s' % tex_name
+        os.system(pdfcmd)
+        
 
 print('='*30)
 print('tests passed = %i' % passed)

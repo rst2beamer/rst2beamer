@@ -37,7 +37,7 @@ flag --overlaybullets
 Slide 4
 =======
 
-None overlaying enumerated list:
+Non-overlaying enumerated list:
 
 #. nooverlay enumerated 1
 #. nooverlay enumerated 2
