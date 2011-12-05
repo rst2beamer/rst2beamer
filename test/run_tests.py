@@ -16,6 +16,18 @@ git update-index --assume-unchanged output_file.tex
 
 to ask git not to track changes to these files.
 """
+
+#################################
+#
+# To Do:
+#
+#  - add automated tests for any rst files in this dir that aren't
+#    represented here
+#  - add tests for various commandline options
+#
+#################################
+
+
 from optparse import OptionParser
 
 usage = 'usage: %prog [options]'
