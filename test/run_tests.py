@@ -31,7 +31,9 @@ parser.set_defaults(traceback=False)
 import txt_mixin, os
 
 
-testing_files = ['simple_slide_test']
+testing_files = ['simple_slide_test', \
+                 'overlay_test',\
+                 ]
 
 cmd_pat = 'rst2beamer.py %s %s'
 
@@ -79,6 +81,7 @@ def test_one_file(actual_tex_name, expected_tex_name):
         
     
 failures = 0
+passed = 0
 
 for item in testing_files:
     rst_name = item + '.rst'
@@ -99,7 +102,12 @@ for item in testing_files:
     cur_fail = test_one_file(tex_name, expected_out_name)
     failures += cur_fail
 
+    if cur_fail == False:
+        passed += 1
+
 print('='*30)
+print('tests passed = %i' % passed)
 print('total failures = %i' % failures)
+
 
     
