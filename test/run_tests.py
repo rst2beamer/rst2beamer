@@ -37,6 +37,7 @@ import txt_mixin, os
 testing_files = ['simple_slide_test', \
                  'overlay_test',\
                  'sectioning_test', \
+                 'figure_centering_test', \
                  ]
 
 cmd_pat = 'rst2beamer.py %s %s'
