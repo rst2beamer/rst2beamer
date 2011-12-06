@@ -824,7 +824,7 @@ class BeamerTranslator (LaTeXTranslator):
         # b) coditional fallback definitions (after style sheet)
         self.fallbacks = self.fallbacks.sortedvalues()
         # c) PDF properties
-        self.pdfsetup.append(PreambleCmds.linking % (self.hyperlink_color,))
+        self.pdfsetup.append(PreambleCmds.linking % self.hyperref_options)
 
         if self.pdfauthor:
             authors = self.author_separator.join(self.pdfauthor)
