@@ -48,6 +48,11 @@ from docutils.nodes import fully_normalize_name as normalize_name
 from docutils.parsers.rst import directives, Directive
 from docutils import frontend
 from docutils.writers.latex2e import PreambleCmds
+
+try:
+    import py_directive
+except: pass
+
 ## CONSTANTS & DEFINES ###
 
 SHOWNOTES_FALSE = 'false'
