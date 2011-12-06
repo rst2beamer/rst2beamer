@@ -54,20 +54,7 @@ testing_files = ['simple_slide_test', \
 
 cmd_pat = 'rst2beamer.py %s %s'
 
-def test_one_file(actual_tex_name, expected_tex_name):
-    """Load actual_tex_name and extract its body, i.e. that which is
-    between \\begin{document} and \\end{document}.  Then compare this
-    body to expected_tex_name."""
-    actual = txt_mixin.txt_file_with_list(actual_tex_name)
-    expected = txt_mixin.txt_file_with_list(expected_tex_name)
-    inds1 = actual.findall('\\begin{document}')
-    assert len(inds1) == 1, 'Did not find exactly one instance of \\begin{document}'
-    startind = inds1[0] + 1
-    inds2 = actual.findall('\\end{document}')
-    assert len(inds2) == 1, 'Did not find exactly one instance of \\end{document}'
-    stopind = inds2[0]
-    actual_body = actual.list[startind:stopind]
-    expected_body = expected.list
+def compare_two_bodies(actual_body, expected_body):
     #strip empty lines from beginning and end of both lists
     while not actual_body[0]:
         actual_body.pop(0)
@@ -95,37 +82,90 @@ def test_one_file(actual_tex_name, expected_tex_name):
             print('exp_line = %s' % exp_line)
 
     return failure
-        
+
+
     
+def test_one_file(actual_tex_name, expected_tex_name, \
+                  cut_header=True):
+    """Load actual_tex_name and extract its body, i.e. that which is
+    between \\begin{document} and \\end{document}.  Then compare this
+    body to expected_tex_name."""
+    actual = txt_mixin.txt_file_with_list(actual_tex_name)
+    expected = txt_mixin.txt_file_with_list(expected_tex_name)
+    if cut_header:
+        inds1 = actual.findall('\\begin{document}')
+        assert len(inds1) == 1, 'Did not find exactly one instance of \\begin{document}'
+        startind = inds1[0] + 1
+        inds2 = actual.findall('\\end{document}')
+        assert len(inds2) == 1, 'Did not find exactly one instance of \\end{document}'
+        stopind = inds2[0]
+        actual_body = actual.list[startind:stopind]
+    else:
+        actual_body = actual.list
+        
+    expected_body = expected.list
+    
+    return compare_two_bodies(actual_body, expected_body)
+
+
+
+class tester(object):
+    """A class to try and make it easy to run different rst2beamer
+    tests.  For now, the primary question is how to handle cases that
+    want to also test the header and cases that want to cut it off."""
+    def __init__(self, basename, cut_header=True):
+        self.basename = basename
+        self.rst_name = basename + '.rst'
+        self.expected_out_name = basename + '_expected.tex'
+        self.tex_name = basename + '.tex'
+        self.cut_header = cut_header
+
+
+    def run_test(self):
+        if os.path.exists(self.tex_name):
+            os.remove(self.tex_name)#if the tex file is left laying around and
+                                    #rst2beamer fails to translate, the test
+                                    #could falsely pass
+        cmd = cmd_pat % (self.rst_name, self.tex_name)
+        if options.traceback:
+            cmd += ' --traceback'
+
+        print(cmd)
+        os.system(cmd)
+
+        assert os.path.exists(self.tex_name), "%s does not exist.  rst translation probably failes" % self.tex_name
+        self.result = test_one_file(self.tex_name, self.expected_out_name, \
+                                    cut_header=self.cut_header)
+        return self.result
+
+    
+
+cut_header_tests = [tester(basename) for basename in testing_files]
+
+keep_header_list = ['hyperlink_color', \
+                    ]
+
+keep_header_tests = [tester(basename, cut_header=False) for basename \
+                     in keep_header_list]
+
 failures = 0
 passed = 0
 
-for item in testing_files:
-    rst_name = item + '.rst'
-    expected_out_name = item + '_expected.tex'
-    tex_name = item + '.tex'
-    if os.path.exists(tex_name):
-        os.remove(tex_name)#if the tex file is left laying around and
-                           #rst2beamer fails to translate, the test
-                           #could falsely pass
-    cmd = cmd_pat % (rst_name, tex_name)
-    if options.traceback:
-        cmd += ' --traceback'
-        
-    print(cmd)
-    os.system(cmd)
+all_tests = cut_header_tests + keep_header_tests
 
-    assert os.path.exists(tex_name), "%s does not exist.  rst translation probably failes" % tex_name
-    cur_fail = test_one_file(tex_name, expected_out_name)
-    failures += cur_fail
-
+for test in all_tests:
+    cur_fail = test.run_test()
+    
     if cur_fail == False:
         passed += 1
+    else:
+        failures += 1
 
     if options.runlatex:
-        pdfcmd = 'pdflatex %s' % tex_name
+        pdfcmd = 'pdflatex %s' % test.tex_name
         os.system(pdfcmd)
         
+
 
 print('='*30)
 print('tests passed = %i' % passed)
