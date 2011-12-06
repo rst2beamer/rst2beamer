@@ -737,10 +737,10 @@ class BeamerTranslator (LaTeXTranslator):
         #    if ('{hyperref}' in self.head_prefix[i])]
         hyperref_posn = index (self.head_prefix,
             lambda x: '{hyperref}\n' in x)
-        if (hyperref_posn is None):
-            self.head_prefix.extend ([
-                '\\usepackage{hyperref}\n'
-            ])
+        ## if (hyperref_posn is None):
+        ##     self.head_prefix.extend ([
+        ##         '\\usepackage{hyperref}\n'
+        ##     ])
 
         #self.head_prefix[hyperref_posn[0]] = '\\usepackage{hyperref}\n'
         self.head_prefix.extend ([
