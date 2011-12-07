@@ -27,32 +27,10 @@ to ask git not to track changes to these files.
 #
 #################################
 
-
-from optparse import OptionParser
-
-usage = 'usage: %prog [options]'
-parser = OptionParser(usage)
-
-parser.add_option("-t","--traceback", action="store_true", dest="traceback", \
-                  help="run rst2beamer.py with traceback option.")
-
-parser.add_option("-r","--runlatex", action="store_true", dest="runlatex", \
-                  help="boolean option to run pdflatex for all the test files.")
-
-parser.set_defaults(traceback=False)
-
-(options, args) = parser.parse_args()
-
 import txt_mixin, os
 
-
-testing_files = ['simple_slide_test', \
-                 'overlay_test',\
-                 'sectioning_test', \
-                 'figure_centering_test', \
-                 ]
-
 cmd_pat = 'rst2beamer.py %s %s'
+
 
 def compare_two_bodies(actual_body, expected_body):
     #strip empty lines from beginning and end of both lists
@@ -138,38 +116,62 @@ class tester(object):
                                     cut_header=self.cut_header)
         return self.result
 
-    
-
-cut_header_tests = [tester(basename) for basename in testing_files]
-
-keep_header_list = ['hyperlink_color', \
-                    ]
-
-keep_header_tests = [tester(basename, cut_header=False) for basename \
-                     in keep_header_list]
-
-failures = 0
-passed = 0
-
-all_tests = cut_header_tests + keep_header_tests
-
-for test in all_tests:
-    cur_fail = test.run_test()
-    
-    if cur_fail == False:
-        passed += 1
-    else:
-        failures += 1
-
-    if options.runlatex:
-        pdfcmd = 'pdflatex %s' % test.tex_name
-        os.system(pdfcmd)
-        
 
 
-print('='*30)
-print('tests passed = %i' % passed)
-print('total failures = %i' % failures)
+if __name__ == '__main__':
+    from optparse import OptionParser
+
+    usage = 'usage: %prog [options]'
+    parser = OptionParser(usage)
+
+    parser.add_option("-t","--traceback", action="store_true", dest="traceback", \
+                      help="run rst2beamer.py with traceback option.")
+
+    parser.add_option("-r","--runlatex", action="store_true", dest="runlatex", \
+                      help="boolean option to run pdflatex for all the test files.")
+
+    parser.set_defaults(traceback=False)
+
+    (options, args) = parser.parse_args()
 
 
-    
+    testing_files = ['simple_slide_test', \
+                     'overlay_test',\
+                     'sectioning_test', \
+                     'figure_centering_test', \
+                     ]
+
+
+    cut_header_tests = [tester(basename) for basename in testing_files]
+
+    keep_header_list = ['hyperlink_color', \
+                        ]
+
+    keep_header_tests = [tester(basename, cut_header=False) for basename \
+                         in keep_header_list]
+
+    failures = 0
+    passed = 0
+
+    all_tests = cut_header_tests + keep_header_tests
+
+    for test in all_tests:
+        cur_fail = test.run_test()
+
+        if cur_fail == False:
+            passed += 1
+        else:
+            failures += 1
+
+        if options.runlatex:
+            pdfcmd = 'pdflatex %s' % test.tex_name
+            os.system(pdfcmd)
+
+
+
+    print('='*30)
+    print('tests passed = %i' % passed)
+    print('total failures = %i' % failures)
+
+
+
