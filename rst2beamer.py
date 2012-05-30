@@ -110,6 +110,12 @@ BEAMER_SPEC =   (
                 {'default': True, }
             ),
             (
+                'Shortauthor for use in header/footer of slide',
+                ['--shortauthor'],
+                {'default': '', }
+            ),
+            
+            (
                 # TODO: this doesn't seem to do anything ...
                 'Specify document options. Multiple options can be given, '
                 'separated by commas.  Default is "10pt,a4paper".',
@@ -808,6 +814,7 @@ class BeamerTranslator (LaTeXTranslator):
 
         self.overlay_bullets = string_to_bool (document.settings.overlaybullets, False)
         self.fragile_default = string_to_bool (document.settings.fragile_default, True)
+        self.shortauthor = document.settings.shortauthor
         #using a False default because
         #True is the actual default.  If you are trying to pass in a value
         #and I can't determine what you really meant, I am assuming you
@@ -847,7 +854,10 @@ class BeamerTranslator (LaTeXTranslator):
                        for author_entry in self.author_stack]
             title = [''.join(self.title)] + self.title_labels
             shorttitle = ''.join(self.title)
-            shortauthor = ''.join(self.pdfauthor)
+            if self.shortauthor:
+                shortauthor = self.shortauthor
+            else:
+                shortauthor = ''.join(self.pdfauthor)
 
             if self.subtitle:
                 title += [r'\\ % subtitle',
@@ -1037,7 +1047,7 @@ class BeamerTranslator (LaTeXTranslator):
         
 
     def end_frametag (self):
-        return '\\end{frame}\n'
+        return '\n\\end{frame}\n'
 
     def visit_section (self, node):
         if has_sub_sections (node):
