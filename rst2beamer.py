@@ -471,7 +471,7 @@ class columnset (nodes.container):
     Named as per docutils standards.
     """
     # NOTE: a simple container, has no attributes.
-
+    
 
 class column (nodes.container):
     """
@@ -489,6 +489,15 @@ class beamer_note (nodes.container):
     node type.
     """
     pass
+
+class onlybeamer(nodes.container):
+    """
+    A block of text to appear in the presentation and not in the
+    handouts or article form.
+
+    Named as per docutils standards.
+    """
+    # NOTE: a simple container, has no attributes.
 
 
 ### DIRECTIVES
@@ -724,6 +733,35 @@ class beamer_section (Directive):
 for name in ['beamer_section', 'r2b-section', 'r2b_section']:
     directives.register_directive (name, beamer_section)
 
+
+class onlybeamer_directive (Directive):
+    """
+    A directive that encloses its content in \only<beamer>{content} so
+    that the content shows up in the presentation and not in the
+    handouts or article version.
+    """
+    required_arguments = 0
+    optional_arguments = 0
+    final_argument_whitespace = True
+    has_content = True
+    option_spec = {'handouttext': str}
+
+    def run (self):
+        ## Preconditions:
+        self.assert_has_content()
+        # get and check width of column set
+        text = '\n'.join (self.content)
+        only_beamer_set = onlybeamer(text)
+        handouttext = self.options.get ('handouttext', '')
+        only_beamer_set.handouttext = handouttext
+        # parse content of columnset
+        self.state.nested_parse (self.content, self.content_offset, \
+                                 only_beamer_set)
+        # survey widths
+        return [only_beamer_set]
+
+
+directives.register_directive('onlybeamer', onlybeamer_directive)
 
 ### WRITER
 
@@ -1253,6 +1291,14 @@ class BeamerTranslator (LaTeXTranslator):
 
     def depart_beamer_note (self, node):
         self.in_note = False
+        self.out.append ('}\n')
+
+    def visit_onlybeamer (self, node):
+        if node.handouttext:
+            self.out.append('\\only<handout>{%s}\n' % node.handouttext)
+        self.out.append ('\\only<beamer>{\n')
+
+    def depart_onlybeamer (self, node):
         self.out.append ('}\n')
 
     def visit_container (self, node):
