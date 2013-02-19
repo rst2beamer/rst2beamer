@@ -114,6 +114,11 @@ BEAMER_SPEC =   (
                 ['--shortauthor'],
                 {'default': '', }
             ),
+            (
+                'Shorttitle for use in header/footer of slide',
+                ['--shorttitle'],
+                {'default': '', }
+            ),
             
             (
                 # TODO: this doesn't seem to do anything ...
@@ -853,6 +858,7 @@ class BeamerTranslator (LaTeXTranslator):
         self.overlay_bullets = string_to_bool (document.settings.overlaybullets, False)
         self.fragile_default = string_to_bool (document.settings.fragile_default, True)
         self.shortauthor = document.settings.shortauthor
+        self.shorttitle = document.settings.shorttitle
         #using a False default because
         #True is the actual default.  If you are trying to pass in a value
         #and I can't determine what you really meant, I am assuming you
@@ -891,7 +897,10 @@ class BeamerTranslator (LaTeXTranslator):
             authors = ['\\\\\n'.join(author_entry)
                        for author_entry in self.author_stack]
             title = [''.join(self.title)] + self.title_labels
-            shorttitle = ''.join(self.title)
+            if self.shorttitle:
+                shorttitle = self.shorttitle
+            else:
+                shorttitle = ''.join(self.title)            
             if self.shortauthor:
                 shortauthor = self.shortauthor
             else:

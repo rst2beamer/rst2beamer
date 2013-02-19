@@ -2,6 +2,9 @@
 Presentation Title
 ==================
 
+:Author: Ryan Krauss
+:Date: Feb. 18, 2013
+
 
 Beamer Section 1
 ----------------
