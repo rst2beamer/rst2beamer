@@ -27,7 +27,7 @@ See <http:www.agapow.net/software/rst2beamer> for more details.
 
 __docformat__ = 'restructuredtext en'
 __author__ = "Ryan Krauss <ryanwkrauss@gmail.com> & Paul-Michael Agapow <agapow@bbsrc.ac.uk>"
-__version__ = "0.6.6"
+__version__ = "0.7.0"
 
 
 ### IMPORTS ###
@@ -1164,6 +1164,8 @@ class BeamerTranslator (LaTeXTranslator):
     def visit_title (self, node):
         if node.astext() == 'dummy':
             raise nodes.SkipNode
+        if isinstance(node.parent, nodes.admonition):
+            raise nodes.SkipNode
         if (self.section_level == self.frame_level+1):#1
             self.out.append ('\\frametitle{%s}\n\n' % \
                 self.encode(node.astext()))
@@ -1364,6 +1366,43 @@ class BeamerTranslator (LaTeXTranslator):
 
     def depart_block (self, node):
         self.out.append ('\\end{block}\n')
+
+
+    def _get_admonition_class(self, node):
+        # strip the generic 'admonition' from the list of classes
+        filt_classes = [cls for cls in node['classes']
+                           if cls != 'admonition']
+        assert len(filt_classes) == 1, "I need exactly 1 classe: " + str(filt_classes)
+        myclass = filt_classes[0].lower()#I think docutils lowers anyways, but just to be sure
+        return myclass
+
+        
+    def _get_alertblock_type(self, myclass):
+        alertlist = ['attention', 'caution', 'danger', 'error', 'warning']
+        if myclass in alertlist:
+            env = 'alertblock'
+        else:
+            env = 'block'
+        return env
+
+        
+    def visit_admonition(self, node):
+        #pdb.set_trace()
+        self.fallbacks['admonition'] = PreambleCmds.admonition
+        if 'error' in node['classes']:
+            self.fallbacks['error'] = PreambleCmds.error
+        myclass = self._get_admonition_class(node)
+        env = self._get_alertblock_type(myclass)
+            
+        title = myclass.capitalize()
+        self.out.append ('\\begin{%s}{%s}\n' % (env,title))
+    
+
+    def depart_admonition(self, node=None):
+        myclass = self._get_admonition_class(node)
+        env = self._get_alertblock_type(myclass)
+        self.out.append ('\\end{%s}\n' % env)
+
 
     def visit_container (self, node):
         """
