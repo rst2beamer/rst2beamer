@@ -505,6 +505,15 @@ class onlybeamer(nodes.container):
     # NOTE: a simple container, has no attributes.
 
 
+class block(nodes.container):
+    """
+    A block of text to appear in a block environment.
+
+    Named as per docutils standards.
+    """
+    # NOTE: a simple container, has no attributes.
+
+
 ### DIRECTIVES
 
 class CodeBlockDirective (Directive):
@@ -766,7 +775,41 @@ class onlybeamer_directive (Directive):
         return [only_beamer_set]
 
 
-directives.register_directive('onlybeamer', onlybeamer_directive)
+class block_directive (Directive):
+    """
+    A directive that encloses its content in
+    \begin{block}{title}
+       content
+    \end{block}
+    """
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    has_content = True
+    option_spec = {}
+
+    def run (self):
+        ## Preconditions:
+        self.assert_has_content()
+        title = self.arguments[0]
+        # get and check width of column set
+        text = '\n'.join (self.content)
+        body_set = block(text)
+        # parse content of columnset
+        self.state.nested_parse (self.content, self.content_offset, \
+                                 body_set)
+        # survey widths
+        text_node = nodes.Text (title)
+        text_nodes = [text_node]        
+        title_node = nodes.title (title, '', *text_nodes)
+        mynodes = [body_set]
+        body_set.title = title
+        #mynodes += title_node
+        #pdb.set_trace()
+        return [body_set]
+
+
+directives.register_directive('block', block_directive)
 
 ### WRITER
 
@@ -1309,6 +1352,18 @@ class BeamerTranslator (LaTeXTranslator):
 
     def depart_onlybeamer (self, node):
         self.out.append ('}\n')
+
+
+    def visit_block (self, node):
+        if hasattr(node, 'title'):
+            title = node.title
+        else:
+            title = ''
+        self.out.append ('\\begin{block}{%s}\n' % title)
+        
+
+    def depart_block (self, node):
+        self.out.append ('\\end{block}\n')
 
     def visit_container (self, node):
         """
