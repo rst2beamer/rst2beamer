@@ -1140,13 +1140,18 @@ class BeamerTranslator (LaTeXTranslator):
         return '\n\\end{frame}\n'
 
     def visit_section (self, node):
-        if has_sub_sections (node):
-            temp = self.section_level + 1
-            if temp > self.frame_level:
-                self.frame_level = temp
+        if node.astext() == 'blankslide':
+            #this never gets reached, but I don't know if that is bad
+            pdb.set_trace()
+            self.out.append('\\begin{frame}[plain]{}\n\\end{frame}')
         else:
-            self.out.append (self.begin_frametag(node))
-        LaTeXTranslator.visit_section (self, node)
+            if has_sub_sections (node):
+                temp = self.section_level + 1
+                if temp > self.frame_level:
+                    self.frame_level = temp
+            else:
+                self.out.append (self.begin_frametag(node))
+            LaTeXTranslator.visit_section (self, node)
 
 
     def bookmark (self, node):
@@ -1166,7 +1171,13 @@ class BeamerTranslator (LaTeXTranslator):
             raise nodes.SkipNode
         if isinstance(node.parent, nodes.admonition):
             raise nodes.SkipNode
-        if (self.section_level == self.frame_level+1):#1
+        if node.astext() == 'blankslide':
+            #a blankslide has no title, but is otherwise processed as normal,
+            #meaning that the title is blank, but the slide can have some
+            #content.  It must at least contain a comment.
+            #self.out.append('\\begin{frame}[plain]{}\n\\end{frame}')
+            raise nodes.SkipNode
+        elif (self.section_level == self.frame_level+1):#1
             self.out.append ('\\frametitle{%s}\n\n' % \
                 self.encode(node.astext()))
             raise nodes.SkipNode
