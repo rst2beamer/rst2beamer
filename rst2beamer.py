@@ -503,7 +503,7 @@ class onlybeamer(nodes.container):
     Named as per docutils standards.
     """
     # NOTE: a simple container, has no attributes.
-
+    pass
 
 class block(nodes.container):
     """
@@ -512,7 +512,7 @@ class block(nodes.container):
     Named as per docutils standards.
     """
     # NOTE: a simple container, has no attributes.
-
+    pass
 
 ### DIRECTIVES
 
@@ -810,6 +810,7 @@ class block_directive (Directive):
 
 
 directives.register_directive('block', block_directive)
+directives.register_directive('onlybeamer', onlybeamer_directive)
 
 ### WRITER
 
@@ -1140,18 +1141,20 @@ class BeamerTranslator (LaTeXTranslator):
         return '\n\\end{frame}\n'
 
     def visit_section (self, node):
-        if node.astext() == 'blankslide':
-            #this never gets reached, but I don't know if that is bad
-            pdb.set_trace()
-            self.out.append('\\begin{frame}[plain]{}\n\\end{frame}')
+        ## if node.astext() == 'blankslide':
+        ##     #this never gets reached, but I don't know if that is bad
+        ##     #pdb.set_trace()
+        ##     self.out.append('\n\\begin{frame}[fragile]\\frametitle{}\n\\end{frame}\n')
+        ## else:
+        if has_sub_sections (node):
+            temp = self.section_level + 1
+            if temp > self.frame_level:
+                self.frame_level = temp
         else:
-            if has_sub_sections (node):
-                temp = self.section_level + 1
-                if temp > self.frame_level:
-                    self.frame_level = temp
-            else:
-                self.out.append (self.begin_frametag(node))
-            LaTeXTranslator.visit_section (self, node)
+            self.out.append (self.begin_frametag(node))
+        ## if node.astext() == 'blankslide':
+        ##     pdb.set_trace()
+        LaTeXTranslator.visit_section (self, node)
 
 
     def bookmark (self, node):
@@ -1171,15 +1174,21 @@ class BeamerTranslator (LaTeXTranslator):
             raise nodes.SkipNode
         if isinstance(node.parent, nodes.admonition):
             raise nodes.SkipNode
-        if node.astext() == 'blankslide':
-            #a blankslide has no title, but is otherwise processed as normal,
-            #meaning that the title is blank, but the slide can have some
-            #content.  It must at least contain a comment.
-            #self.out.append('\\begin{frame}[plain]{}\n\\end{frame}')
-            raise nodes.SkipNode
+        ## if node.astext() == 'blankslide':
+        ##     # this doesn't seem to work, so I am going to encode
+        ##     # \frametitle{} #<-- 7/9/15
+        ##     #!#!#!#!#!#!#!#
+        ##     #a blankslide has no title, but is otherwise processed as normal,
+        ##     #meaning that the title is blank, but the slide can have some
+        ##     #content.  It must at least contain a comment.
+        ##     #self.out.append('\\begin{frame}[plain]{}\n\\end{frame}')
+        ##     raise nodes.SkipNode
         elif (self.section_level == self.frame_level+1):#1
-            self.out.append ('\\frametitle{%s}\n\n' % \
-                self.encode(node.astext()))
+            if node.astext() == 'blankslide':
+                title = ''
+            else:
+                title = self.encode(node.astext())
+            self.out.append ('\\frametitle{%s}\n\n' % title)
             raise nodes.SkipNode
         else:
             LaTeXTranslator.visit_title (self, node)
